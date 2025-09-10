@@ -1,0 +1,268 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                     String                @id @default(cuid())
+  email                  String                @unique
+  name                   String
+  password               String
+  role                   Role                  @default(STUDENT)
+  studentId              String?               @unique
+  phone                  String?
+  status                 UserStatus            @default(PENDING)
+  faceEnrollmentStatus   FaceEnrollmentStatus  @default(NOT_ENROLLED)
+  documentVerified       Boolean               @default(false)
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  approvedAt             DateTime?
+  approvedBy             String?
+  
+  // Relations
+  attendances            Attendance[]
+  enrollments            Enrollment[]
+  faceProfiles           FaceProfile[]
+  sessions               Session[]
+  registrationSteps      RegistrationStep[]
+  documentVerifications  DocumentVerification[]
+  userApprovals          UserApproval[]        @relation("UserApprovals")
+  approvalsByAdmin       UserApproval[]        @relation("AdminApprovals")
+  lecturedClasses        Class[]               @relation("LecturerClasses")
+  
+  @@map("users")
+}
+
+model Class {
+  id          String       @id @default(cuid())
+  name        String
+  code        String       @unique
+  lecturerId  String
+  locationId  String
+  schedule    Json         // {day: "monday", time: "08:00", duration: 120}
+  capacity    Int          @default(30)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
+  // Relations
+  lecturer    User         @relation("LecturerClasses", fields: [lecturerId], references: [id])
+  location    Location     @relation(fields: [locationId], references: [id])
+  attendances Attendance[]
+  enrollments Enrollment[]
+  
+  @@map("classes")
+}
+
+model Location {
+  id             String   @id @default(cuid())
+  name           String
+  building       String
+  floor          String
+  wifiSsid       String
+  wifiSecurity   String   @default("WPA2")
+  gpsCoordinates Json?    // {lat: number, lng: number}
+  capacity       Int      @default(50)
+  createdAt      DateTime @default(now())
+  
+  // Relations
+  classes        Class[]
+  
+  @@map("locations")
+}
+
+model Attendance {
+  id              String   @id @default(cuid())
+  userId          String
+  classId         String
+  timestamp       DateTime @default(now())
+  method          AttendanceMethod @default(FACE_RECOGNITION)
+  ipAddress       String?
+  wifiSsid        String?
+  confidenceScore Float?
+  deviceInfo      Json?
+  
+  // Relations
+  user            User     @relation(fields: [userId], references: [id])
+  class           Class    @relation(fields: [classId], references: [id])
+  
+  @@map("attendances")
+}
+
+model Enrollment {
+  id         String           @id @default(cuid())
+  userId     String
+  classId    String
+  enrolledAt DateTime         @default(now())
+  status     EnrollmentStatus @default(ACTIVE)
+  
+  // Relations
+  user       User             @relation(fields: [userId], references: [id])
+  class      Class            @relation(fields: [classId], references: [id])
+  
+  @@unique([userId, classId])
+  @@map("enrollments")
+}
+
+model FaceProfile {
+  id                   String   @id @default(cuid())
+  userId               String
+  faceDescriptors      Json     // Array of face descriptor vectors
+  qualityScore         Float
+  enrollmentImages     Json     // Array of image URLs
+  confidenceThreshold  Float    @default(0.85)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  // Relations
+  user                 User     @relation(fields: [userId], references: [id])
+  qualityLogs          FaceQualityLog[]
+  
+  @@map("face_profiles")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  token        String   @unique
+  deviceInfo   Json?
+  ipAddress    String?
+  expiresAt    DateTime
+  lastActivity DateTime @default(now())
+  createdAt    DateTime @default(now())
+  
+  // Relations
+  user         User     @relation(fields: [userId], references: [id])
+  
+  @@map("sessions")
+}
+
+model RegistrationStep {
+  id          String               @id @default(cuid())
+  userId      String
+  stepName    RegistrationStepType
+  status      StepStatus           @default(PENDING)
+  data        Json?
+  completedAt DateTime?
+  createdAt   DateTime             @default(now())
+  
+  // Relations
+  user        User                 @relation(fields: [userId], references: [id])
+  
+  @@map("registration_steps")
+}
+
+model DocumentVerification {
+  id           String              @id @default(cuid())
+  userId       String
+  documentType DocumentType
+  filePath     String
+  ocrData      Json?
+  verifiedAt   DateTime?
+  verifiedBy   String?
+  status       VerificationStatus  @default(PENDING)
+  
+  // Relations
+  user         User                @relation(fields: [userId], references: [id])
+  
+  @@map("document_verifications")
+}
+
+model UserApproval {
+  id         String         @id @default(cuid())
+  userId     String
+  adminId    String
+  status     ApprovalStatus @default(PENDING)
+  reason     String?
+  reviewedAt DateTime?
+  notes      String?
+  
+  // Relations
+  user       User           @relation("UserApprovals", fields: [userId], references: [id])
+  admin      User           @relation("AdminApprovals", fields: [adminId], references: [id])
+  
+  @@map("user_approvals")
+}
+
+model FaceQualityLog {
+  id                String      @id @default(cuid())
+  userId            String
+  faceProfileId     String
+  imagePath         String
+  qualityScores     Json        // {brightness: number, blur: number, faceSize: number, angle: number}
+  validationResults Json        // {passes: boolean, issues: string[]}
+  createdAt         DateTime    @default(now())
+  
+  // Relations
+  faceProfile       FaceProfile @relation(fields: [faceProfileId], references: [id])
+  
+  @@map("face_quality_logs")
+}
+
+// Enums
+enum Role {
+  ADMIN
+  LECTURER
+  STUDENT
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+}
+
+enum FaceEnrollmentStatus {
+  NOT_ENROLLED
+  IN_PROGRESS
+  ENROLLED
+  FAILED
+}
+
+enum AttendanceMethod {
+  FACE_RECOGNITION
+  QR_CODE
+  MANUAL
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  DROPPED
+  COMPLETED
+}
+
+enum RegistrationStepType {
+  BASIC_INFO
+  DOCUMENT_VERIFICATION
+  FACE_ENROLLMENT
+  CONTACT_VERIFICATION
+}
+
+enum StepStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+enum DocumentType {
+  STUDENT_ID
+  STAFF_ID
+  PASSPORT
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
