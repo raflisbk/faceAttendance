@@ -43,55 +43,57 @@ export const registerStep1Schema = z.object({
     required_error: 'Role is required',
     invalid_type_error: 'Invalid role selected'
   }),
-  studentId: z.string()
-    .optional()
-    .refine((val, ctx) => {
-      const role = ctx.parent?.role;
-      if (role === USER_ROLES.STUDENT && !val) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Student ID is required for students'
-        });
-        return false;
-      }
-      if (role === USER_ROLES.STUDENT && val && !/^[A-Z0-9]{6,20}$/.test(val)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Student ID must be 6-20 characters with only uppercase letters and numbers'
-        });
-        return false;
-      }
-      return true;
-    }),
-  employeeId: z.string()
-    .optional()
-    .refine((val, ctx) => {
-      const role = ctx.parent?.role;
-      if (role === USER_ROLES.LECTURER && !val) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Employee ID is required for lecturers'
-        });
-        return false;
-      }
-      if (role === USER_ROLES.LECTURER && val && !/^[A-Z0-9]{6,20}$/.test(val)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Employee ID must be 6-20 characters with only uppercase letters and numbers'
-        });
-        return false;
-      }
-      return true;
-    }),
+  studentId: z.string().optional(),
+  employeeId: z.string().optional(),
   password: passwordSchema,
   confirmPassword: z.string(),
   agreeToTerms: z.boolean()
     .refine(val => val === true, 'You must agree to terms and conditions'),
   agreeToPrivacy: z.boolean()
     .refine(val => val === true, 'You must agree to privacy policy'),
-}).refine(data => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ['confirmPassword'],
+}).superRefine((data, ctx) => {
+  // Password confirmation validation
+  if (data.password !== data.confirmPassword) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Passwords don't match",
+      path: ['confirmPassword'],
+    });
+  }
+
+  // Student ID validation
+  if (data.role === USER_ROLES.STUDENT && !data.studentId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Student ID is required for students',
+      path: ['studentId'],
+    });
+  }
+
+  if (data.role === USER_ROLES.STUDENT && data.studentId && !/^[A-Z0-9]{6,20}$/.test(data.studentId)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Student ID must be 6-20 characters with only uppercase letters and numbers',
+      path: ['studentId'],
+    });
+  }
+
+  // Employee ID validation
+  if (data.role === USER_ROLES.LECTURER && !data.employeeId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Employee ID is required for lecturers',
+      path: ['employeeId'],
+    });
+  }
+
+  if (data.role === USER_ROLES.LECTURER && data.employeeId && !/^[A-Z0-9]{6,20}$/.test(data.employeeId)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Employee ID must be 6-20 characters with only uppercase letters and numbers',
+      path: ['employeeId'],
+    });
+  }
 });
 
 export const registerStep2Schema = z.object({
@@ -383,44 +385,6 @@ export const multipleImagesSchema = z.object({
     ),
 });
 
-// Notification Schemas
-export const notificationSchema = z.object({
-  title: z.string()
-    .min(1, 'Title is required')
-    .max(100, 'Title must be less than 100 characters'),
-  message: z.string()
-    .min(1, 'Message is required')
-    .max(500, 'Message must be less than 500 characters'),
-  type: z.enum(['info', 'success', 'warning', 'error']).default('info'),
-  recipients: z.array(z.string().uuid('Invalid user ID'))
-    .min(1, 'At least one recipient is required'),
-  scheduledAt: z.date().optional(),
-  expiresAt: z.date().optional(),
-});
-
-// Search and Filter Schemas
-export const userSearchSchema = z.object({
-  query: z.string().optional(),
-  role: z.enum([USER_ROLES.ADMIN, USER_ROLES.LECTURER, USER_ROLES.STUDENT]).optional(),
-  status: z.enum([
-    USER_STATUS.PENDING,
-    USER_STATUS.APPROVED,
-    USER_STATUS.REJECTED,
-    USER_STATUS.SUSPENDED,
-    USER_STATUS.INACTIVE
-  ]).optional(),
-  registrationDateFrom: z.date().optional(),
-  registrationDateTo: z.date().optional(),
-}).merge(paginationSchema);
-
-export const attendanceSearchSchema = z.object({
-  classId: z.string().uuid('Invalid class ID').optional(),
-  studentId: z.string().uuid('Invalid student ID').optional(),
-  status: z.enum(['PRESENT', 'ABSENT', 'LATE', 'EXCUSED']).optional(),
-  dateFrom: z.date().optional(),
-  dateTo: z.date().optional(),
-}).merge(paginationSchema);
-
 // Type exports for TypeScript
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterStep1Input = z.infer<typeof registerStep1Schema>;
@@ -444,9 +408,6 @@ export type PaginationInput = z.infer<typeof paginationSchema>;
 export type IdParamInput = z.infer<typeof idParamSchema>;
 export type SingleImageInput = z.infer<typeof singleImageSchema>;
 export type MultipleImagesInput = z.infer<typeof multipleImagesSchema>;
-export type NotificationInput = z.infer<typeof notificationSchema>;
-export type UserSearchInput = z.infer<typeof userSearchSchema>;
-export type AttendanceSearchInput = z.infer<typeof attendanceSearchSchema>;
 
 // Validation helper functions
 export const validateSchema = <T>(schema: z.ZodSchema<T>, data: unknown): { success: boolean; data?: T; errors?: z.ZodError } => {

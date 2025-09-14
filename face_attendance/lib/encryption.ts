@@ -192,8 +192,7 @@ export class DataEncryption {
    */
   static encrypt(text: string): { encrypted: string; iv: string; tag: string } {
     const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipher(this.algorithm, this.key);
-    cipher.setAAD(Buffer.from('face-attendance', 'utf8'));
+    const cipher = crypto.createCipheriv(this.algorithm, this.key, iv);
 
     let encrypted = cipher.update(text, 'utf8', 'hex');
     encrypted += cipher.final('hex');
@@ -211,8 +210,7 @@ export class DataEncryption {
    * Decrypt sensitive data
    */
   static decrypt(encryptedData: { encrypted: string; iv: string; tag: string }): string {
-    const decipher = crypto.createDecipher(this.algorithm, this.key);
-    decipher.setAAD(Buffer.from('face-attendance', 'utf8'));
+    const decipher = crypto.createDecipheriv(this.algorithm, this.key, Buffer.from(encryptedData.iv, 'hex'));
     decipher.setAuthTag(Buffer.from(encryptedData.tag, 'hex'));
 
     let decrypted = decipher.update(encryptedData.encrypted, 'hex', 'utf8');
@@ -256,7 +254,7 @@ export class SecureRandom {
    * Generate secure random number
    */
   static generateRandomNumber(min: number = 100000, max: number = 999999): number {
-    return Math.floor(crypto.randomUint32() / (0xFFFFFFFF + 1) * (max - min + 1)) + min;
+    return crypto.randomInt(min, max + 1);
   }
 
   /**
@@ -266,7 +264,7 @@ export class SecureRandom {
     const digits = '0123456789';
     let otp = '';
     for (let i = 0; i < length; i++) {
-      otp += digits[Math.floor(crypto.randomUint32() / (0xFFFFFFFF + 1) * digits.length)];
+      otp += digits[crypto.randomInt(0, digits.length)];
     }
     return otp;
   }
@@ -463,7 +461,7 @@ export class BiometricEncryption {
     const iv = crypto.randomBytes(16);
     
     // Encrypt template
-    const cipher = crypto.createCipherGCM('aes-256-gcm', this.biometricKey, iv);
+    const cipher = crypto.createCipheriv('aes-256-gcm', this.biometricKey, iv);
     let encrypted = cipher.update(templateJson, 'utf8', 'hex');
     encrypted += cipher.final('hex');
     
@@ -492,11 +490,11 @@ export class BiometricEncryption {
   ): Float32Array {
     const [encrypted, authTag] = encryptedTemplate.split(':');
     
-    const decipher = crypto.createDecipherGCM(
+    const decipher = crypto.createDecipheriv(
       'aes-256-gcm',
       this.biometricKey,
       Buffer.from(iv, 'hex')
-    );
+    ) as crypto.DecipherGCM;
     
     decipher.setAuthTag(Buffer.from(authTag, 'hex'));
     
@@ -736,19 +734,4 @@ export const SecurityUtils = {
   generateSecureToken: (length: number = 32): string => {
     return crypto.randomBytes(length).toString('base64url');
   }
-};
-
-// Export all classes and utilities
-export {
-  PasswordManager,
-  JWTManager,
-  DataEncryption,
-  SecureRandom,
-  HashManager,
-  SecurityLimiter,
-  AuditLogger,
-  BiometricEncryption,
-  SessionSecurity,
-  InputSecurity,
-  SecurityHeaders
 };

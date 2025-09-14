@@ -208,18 +208,20 @@ export class SessionManager {
     }, 60000); // Check every minute
 
     // Listen for storage changes (multi-tab synchronization)
-    window.addEventListener('storage', (e) => {
-      if (e.key === TokenManager['TOKEN_KEY'] || e.key === TokenManager['USER_KEY']) {
-        this.notifyListeners();
-      }
-    });
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', (e) => {
+        if (e.key === TokenManager['TOKEN_KEY'] || e.key === TokenManager['USER_KEY']) {
+          this.notifyListeners();
+        }
+      });
 
-    // Listen for page visibility changes
-    document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) {
-        this.checkSession();
-      }
-    });
+      // Listen for page visibility changes
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+          this.checkSession();
+        }
+      });
+    }
   }
 
   /**
@@ -466,7 +468,7 @@ export class AuthHooks {
   static createAuthStateListener(
     callback: (state: AuthState) => void
   ): () => void {
-    const listener = (isAuthenticated: boolean) => {
+    const listener = () => {
       const state = this.useAuthState();
       callback(state);
     };
@@ -764,8 +766,12 @@ export class DeviceSecurity {
    * Generate device fingerprint
    */
   static generateDeviceFingerprint(): string {
+    if (typeof window === 'undefined') return 'server-side';
+    
     const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return 'no-canvas';
+    
     ctx.textBaseline = 'top';
     ctx.font = '14px Arial';
     ctx.fillText('Device fingerprint', 2, 2);
@@ -796,6 +802,7 @@ export class DeviceSecurity {
    * Detect if user is on mobile device
    */
   static isMobileDevice(): boolean {
+    if (typeof navigator === 'undefined') return false;
     return /Mobi|Android/i.test(navigator.userAgent);
   }
 
@@ -807,6 +814,10 @@ export class DeviceSecurity {
     version: string;
     platform: string;
   } {
+    if (typeof navigator === 'undefined') {
+      return { name: 'Unknown', version: 'Unknown', platform: 'Unknown' };
+    }
+
     const ua = navigator.userAgent;
     let name = 'Unknown';
     let version = 'Unknown';
@@ -913,21 +924,7 @@ export function needsPasswordChange(user: User | null): boolean {
   return passwordUpdatedAt < ninetyDaysAgo;
 }
 
-// Initialize session manager when module loads
+// Initialize session manager when module loads (only in browser)
 if (typeof window !== 'undefined') {
   SessionManager.initialize();
 }
-
-// Export all classes and utilities
-export {
-  TokenManager,
-  SessionManager,
-  PermissionManager,
-  AuthHooks,
-  RouteGuard,
-  AuthActions,
-  PasswordStrengthChecker,
-  DeviceSecurity,
-};
-
-      '

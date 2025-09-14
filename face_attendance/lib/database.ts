@@ -133,7 +133,6 @@ export const dbUtils = {
    */
   async runMigrations() {
     try {
-      // This would typically be handled by Prisma CLI
       console.log('Database migrations should be run via Prisma CLI');
       console.log('Run: npx prisma migrate deploy');
     } catch (error) {
@@ -245,7 +244,7 @@ export const dbUtils = {
  * Transaction wrapper with retry logic
  */
 export async function withTransaction<T>(
-  operation: (tx: PrismaClient) => Promise<T>,
+  operation: (tx: Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">) => Promise<T>,
   maxRetries: number = 3
 ): Promise<T> {
   let lastError: Error;
@@ -253,7 +252,7 @@ export async function withTransaction<T>(
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       return await db.$transaction(async (tx) => {
-        return await operation(tx as PrismaClient);
+        return await operation(tx);
       }, {
         maxWait: DB_CONSTANTS.CONNECTION_TIMEOUT,
         timeout: DB_CONSTANTS.STATEMENT_TIMEOUT,

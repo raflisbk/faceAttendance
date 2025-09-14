@@ -302,4 +302,244 @@ export const rateLimiter = {
         resetTime
       };
     } catch (error) {
-      console.
+      console.error(`Rate limiting error for ${identifier}:`, error);
+      return {
+        allowed: true, // Fail open
+        remaining: maxRequests,
+        resetTime: Date.now() + windowMs
+      };
+    }
+  },
+
+  /**
+   * Reset rate limit for identifier
+   */
+  async resetRateLimit(identifier: string): Promise<void> {
+    const key = `rate_limit:${identifier}`;
+    await cacheManager.del(key);
+  }
+};
+
+/**
+ * WiFi Validation Cache
+ */
+export const wifiCache = {
+  /**
+   * Store WiFi validation result
+   */
+  async storeWifiValidation(
+    userId: string,
+    locationId: string,
+    isValid: boolean
+  ): Promise<void> {
+    const key = `wifi:${userId}:${locationId}`;
+    await cacheManager.set(
+      key, 
+      { isValid, timestamp: Date.now() }, 
+      CACHE_CONSTANTS.WIFI_VALIDATION_TTL
+    );
+  },
+
+  /**
+   * Get WiFi validation result
+   */
+  async getWifiValidation(userId: string, locationId: string): Promise<{
+    isValid: boolean;
+    timestamp: number;
+  } | null> {
+    const key = `wifi:${userId}:${locationId}`;
+    return await cacheManager.get(key);
+  }
+};
+
+/**
+ * Attendance Cache
+ */
+export const attendanceCache = {
+  /**
+   * Cache daily attendance for user
+   */
+  async cacheDailyAttendance(userId: string, date: string, attendance: any[]): Promise<void> {
+    const key = `attendance:daily:${userId}:${date}`;
+    await cacheManager.set(key, attendance, CACHE_CONSTANTS.ATTENDANCE_CACHE_TTL);
+  },
+
+  /**
+   * Get cached daily attendance
+   */
+  async getDailyAttendance(userId: string, date: string): Promise<any[] | null> {
+    const key = `attendance:daily:${userId}:${date}`;
+    return await cacheManager.get(key);
+  },
+
+  /**
+   * Invalidate attendance cache for user
+   */
+  async invalidateUserAttendance(userId: string): Promise<void> {
+    const pattern = `attendance:*:${userId}:*`;
+    await cacheManager.delPattern(pattern);
+  }
+};
+
+/**
+ * Cache Health Monitoring
+ */
+export const cacheHealth = {
+  /**
+   * Test cache connection
+   */
+  async testConnection(): Promise<boolean> {
+    try {
+      await redis.ping();
+      return true;
+    } catch (error) {
+      console.error('Cache connection test failed:', error);
+      return false;
+    }
+  },
+
+  /**
+   * Get cache statistics
+   */
+  async getStats() {
+    try {
+      const info = await redis.info('memory');
+      const keyspace = await redis.info('keyspace');
+      const stats = await redis.info('stats');
+      
+      return {
+        memory: this.parseRedisInfo(info),
+        keyspace: this.parseRedisInfo(keyspace),
+        stats: this.parseRedisInfo(stats),
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('Failed to get cache stats:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Parse Redis info string
+   */
+  parseRedisInfo(info: string): Record<string, string> {
+    const lines = info.split('\r\n');
+    const result: Record<string, string> = {};
+    
+    for (const line of lines) {
+      if (line.includes(':')) {
+        const [key, value] = line.split(':');
+        if (key && value !== undefined) {
+          result[key] = value;
+        }
+      }
+    }
+    
+    return result;
+  },
+
+  /**
+   * Clear all cache
+   */
+  async clearAll(): Promise<void> {
+    try {
+      await redis.flushall();
+    } catch (error) {
+      console.error('Failed to clear all cache:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get memory usage
+   */
+  async getMemoryUsage(): Promise<{
+    used: string;
+    peak: string;
+    total: string;
+  }> {
+    try {
+      const info = await redis.info('memory');
+      const parsed = this.parseRedisInfo(info);
+      
+      return {
+        used: parsed.used_memory_human || '0',
+        peak: parsed.used_memory_peak_human || '0',
+        total: parsed.total_system_memory_human || '0'
+      };
+    } catch (error) {
+      console.error('Failed to get memory usage:', error);
+      return { used: '0', peak: '0', total: '0' };
+    }
+  }
+};
+
+/**
+ * Distributed Lock Implementation
+ */
+export const distributedLock = {
+  /**
+   * Acquire distributed lock
+   */
+  async acquireLock(
+    lockKey: string,
+    ttl: number = 30,
+    identifier: string = Math.random().toString(36)
+  ): Promise<string | null> {
+    try {
+      const key = `lock:${lockKey}`;
+      const acquired = await redis.set(key, identifier, 'EX', ttl, 'NX');
+      return acquired === 'OK' ? identifier : null;
+    } catch (error) {
+      console.error(`Failed to acquire lock ${lockKey}:`, error);
+      return null;
+    }
+  },
+
+  /**
+   * Release distributed lock
+   */
+  async releaseLock(lockKey: string, identifier: string): Promise<boolean> {
+    try {
+      const key = `lock:${lockKey}`;
+      const script = `
+        if redis.call("GET", KEYS[1]) == ARGV[1] then
+          return redis.call("DEL", KEYS[1])
+        else
+          return 0
+        end
+      `;
+      
+      const result = await redis.eval(script, 1, key, identifier);
+      return result === 1;
+    } catch (error) {
+      console.error(`Failed to release lock ${lockKey}:`, error);
+      return false;
+    }
+  },
+
+  /**
+   * Execute with lock
+   */
+  async withLock<T>(
+    lockKey: string,
+    operation: () => Promise<T>,
+    ttl: number = 30
+  ): Promise<T> {
+    const identifier = Math.random().toString(36);
+    const lockId = await this.acquireLock(lockKey, ttl, identifier);
+    
+    if (!lockId) {
+      throw new Error(`Failed to acquire lock: ${lockKey}`);
+    }
+
+    try {
+      return await operation();
+    } finally {
+      await this.releaseLock(lockKey, identifier);
+    }
+  }
+};
+
+export { redis };
+export default redis;

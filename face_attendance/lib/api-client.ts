@@ -3,7 +3,7 @@
  * Centralized API communication with error handling, retries, and type safety
  */
 
-import { RATE_LIMITS, ERROR_CODES } from './constants';
+import { ERROR_CODES } from './constants';
 
 // API Response Types
 export interface ApiResponse<T = any> {
@@ -92,9 +92,9 @@ export class HttpClient {
       ...fetchConfig
     } = config;
 
-    const headers = {
+    const headers: Record<string, string> = {
       ...this.defaultHeaders,
-      ...fetchConfig.headers,
+      ...(fetchConfig.headers as Record<string, string> || {}),
     };
 
     if (skipAuth) {
@@ -227,7 +227,7 @@ export class HttpClient {
     return this.makeRequest<T>(endpoint, {
       ...config,
       method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
+      body: data ? JSON.stringify(data) : null,
     });
   }
 
@@ -242,7 +242,7 @@ export class HttpClient {
     return this.makeRequest<T>(endpoint, {
       ...config,
       method: 'PUT',
-      body: data ? JSON.stringify(data) : undefined,
+      body: data ? JSON.stringify(data) : null,
     });
   }
 
@@ -257,7 +257,7 @@ export class HttpClient {
     return this.makeRequest<T>(endpoint, {
       ...config,
       method: 'PATCH',
-      body: data ? JSON.stringify(data) : undefined,
+      body: data ? JSON.stringify(data) : null,
     });
   }
 
@@ -296,57 +296,6 @@ export class HttpClient {
       headers,
     });
   }
-
-  /**
-   * Upload multiple files
-   */
-  async uploadFiles<T>(
-    endpoint: string,
-    files: File[],
-    additionalData?: Record<string, any>,
-    config?: RequestConfig
-  ): Promise<ApiResponse<T>> {
-    const formData = new FormData();
-    
-    files.forEach((file, index) => {
-      formData.append(`files[${index}]`, file);
-    });
-
-    if (additionalData) {
-      Object.entries(additionalData).forEach(([key, value]) => {
-        formData.append(key, String(value));
-      });
-    }
-
-    const headers = { ...this.defaultHeaders };
-    delete headers['Content-Type'];
-
-    return this.makeRequest<T>(endpoint, {
-      ...config,
-      method: 'POST',
-      body: formData,
-      headers,
-    });
-  }
-
-  /**
-   * Download file
-   */
-  async downloadFile(
-    endpoint: string,
-    config?: RequestConfig
-  ): Promise<Blob> {
-    const response = await fetch(`${this.baseURL}${endpoint}`, {
-      headers: this.defaultHeaders,
-      ...config,
-    });
-
-    if (!response.ok) {
-      throw new Error(`Download failed: ${response.statusText}`);
-    }
-
-    return response.blob();
-  }
 }
 
 // Create default HTTP client instance
@@ -370,25 +319,61 @@ export class AuthAPI {
   }
 
   /**
-   * Register user - Step 1
+   * Register user - Step 1: Basic Information
    */
-  static async registerStep1(data: any) {
+  static async registerStep1(data: {
+    name: string;
+    email: string;
+    phone: string;
+    role: 'STUDENT' | 'LECTURER';
+    studentId?: string;
+    employeeId?: string;
+    password: string;
+    confirmPassword: string;
+    agreeToTerms: boolean;
+    agreeToPrivacy: boolean;
+  }) {
     return apiClient.post('/auth/register/step-1', data);
   }
 
   /**
-   * Register user - Step 2
+   * Register user - Step 2: Document Verification
    */
-  static async registerStep2(formData: FormData) {
+  static async registerStep2(data: {
+    documentType: string;
+    documentNumber: string;
+    documentFile: File;
+    documentExpiryDate?: string;
+  }) {
+    const formData = new FormData();
+    formData.append('documentType', data.documentType);
+    formData.append('documentNumber', data.documentNumber);
+    formData.append('documentFile', data.documentFile);
+    
+    if (data.documentExpiryDate) {
+      formData.append('documentExpiryDate', data.documentExpiryDate);
+    }
+
     return apiClient.post('/auth/register/step-2', formData, {
       headers: {}, // Remove Content-Type for FormData
     });
   }
 
   /**
-   * Register user - Step 3
+   * Register user - Step 3: Face Enrollment
    */
-  static async registerStep3(formData: FormData) {
+  static async registerStep3(data: {
+    faceImages: File[];
+    consentToFaceData: boolean;
+  }) {
+    const formData = new FormData();
+    
+    data.faceImages.forEach((image, index) => {
+      formData.append(`faceImages[${index}]`, image);
+    });
+    
+    formData.append('consentToFaceData', data.consentToFaceData.toString());
+
     return apiClient.post('/auth/register/step-3', formData, {
       headers: {},
     });
@@ -399,6 +384,34 @@ export class AuthAPI {
    */
   static async verifyEmail(token: string) {
     return apiClient.post('/auth/verify-email', { token });
+  }
+
+  /**
+   * Verify phone number
+   */
+  static async verifyPhone(otp: string) {
+    return apiClient.post('/auth/verify-phone', { otp });
+  }
+
+  /**
+   * Resend email verification
+   */
+  static async resendEmailVerification() {
+    return apiClient.post('/auth/resend-email-verification');
+  }
+
+  /**
+   * Resend phone verification
+   */
+  static async resendPhoneVerification() {
+    return apiClient.post('/auth/resend-phone-verification');
+  }
+
+  /**
+   * Get registration status
+   */
+  static async getRegistrationStatus() {
+    return apiClient.get('/auth/register/status');
   }
 
   /**
@@ -432,65 +445,24 @@ export class AuthAPI {
 
 // User Management API
 export class UserAPI {
-  /**
-   * Get current user profile
-   */
   static async getProfile() {
     return apiClient.get('/user/profile');
   }
 
-  /**
-   * Update user profile
-   */
   static async updateProfile(data: any) {
     return apiClient.put('/user/profile', data);
   }
 
-  /**
-   * Change password
-   */
   static async changePassword(currentPassword: string, newPassword: string) {
     return apiClient.post('/user/change-password', {
       currentPassword,
       newPassword,
     });
   }
-
-  /**
-   * Upload avatar
-   */
-  static async uploadAvatar(file: File) {
-    return apiClient.uploadFile('/user/avatar', file);
-  }
-
-  /**
-   * Get users (admin only)
-   */
-  static async getUsers(params?: any) {
-    const searchParams = new URLSearchParams(params);
-    return apiClient.get(`/users?${searchParams}`);
-  }
-
-  /**
-   * Approve user
-   */
-  static async approveUser(userId: string) {
-    return apiClient.post(`/users/${userId}/approve`);
-  }
-
-  /**
-   * Reject user
-   */
-  static async rejectUser(userId: string, reason: string) {
-    return apiClient.post(`/users/${userId}/reject`, { reason });
-  }
 }
 
 // Face Recognition API
 export class FaceAPI {
-  /**
-   * Enroll face
-   */
   static async enrollFace(images: File[]) {
     const formData = new FormData();
     images.forEach((image, index) => {
@@ -502,49 +474,24 @@ export class FaceAPI {
     });
   }
 
-  /**
-   * Verify face
-   */
   static async verifyFace(image: File) {
     return apiClient.uploadFile('/face/verify', image);
   }
 
-  /**
-   * Check face quality
-   */
   static async checkFaceQuality(image: File) {
     return apiClient.uploadFile('/face/quality-check', image);
-  }
-
-  /**
-   * Update face profile
-   */
-  static async updateFaceProfile(images: File[]) {
-    const formData = new FormData();
-    images.forEach((image, index) => {
-      formData.append(`images[${index}]`, image);
-    });
-    
-    return apiClient.post('/face/update-profile', formData, {
-      headers: {},
-    });
   }
 }
 
 // Attendance API
 export class AttendanceAPI {
-  /**
-   * Check in attendance
-   */
   static async checkIn(data: any) {
     const formData = new FormData();
     
-    // Add face image
     if (data.faceImage) {
       formData.append('faceImage', data.faceImage);
     }
     
-    // Add other data
     Object.entries(data).forEach(([key, value]) => {
       if (key !== 'faceImage') {
         formData.append(key, String(value));
@@ -556,134 +503,402 @@ export class AttendanceAPI {
     });
   }
 
-  /**
-   * Get attendance history
-   */
   static async getAttendanceHistory(params?: any) {
     const searchParams = new URLSearchParams(params);
     return apiClient.get(`/attendance/history?${searchParams}`);
   }
 
-  /**
-   * Get attendance reports
-   */
   static async getAttendanceReports(params: any) {
     const searchParams = new URLSearchParams(params);
     return apiClient.get(`/attendance/reports?${searchParams}`);
-  }
-
-  /**
-   * Manual attendance entry (admin/lecturer)
-   */
-  static async manualAttendance(data: any) {
-    return apiClient.post('/attendance/manual', data);
-  }
-
-  /**
-   * Export attendance data
-   */
-  static async exportAttendance(params: any) {
-    const searchParams = new URLSearchParams(params);
-    return apiClient.downloadFile(`/attendance/export?${searchParams}`);
   }
 }
 
 // Class Management API
 export class ClassAPI {
-  /**
-   * Get classes
-   */
   static async getClasses(params?: any) {
     const searchParams = new URLSearchParams(params);
     return apiClient.get(`/classes?${searchParams}`);
   }
 
-  /**
-   * Create class
-   */
   static async createClass(data: any) {
     return apiClient.post('/classes', data);
   }
 
-  /**
-   * Update class
-   */
   static async updateClass(id: string, data: any) {
     return apiClient.put(`/classes/${id}`, data);
   }
 
-  /**
-   * Delete class
-   */
   static async deleteClass(id: string) {
     return apiClient.delete(`/classes/${id}`);
-  }
-
-  /**
-   * Get class details
-   */
-  static async getClassDetails(id: string) {
-    return apiClient.get(`/classes/${id}`);
-  }
-
-  /**
-   * Enroll student
-   */
-  static async enrollStudent(classId: string, studentId: string) {
-    return apiClient.post(`/classes/${classId}/enroll`, { studentId });
-  }
-
-  /**
-   * Remove student
-   */
-  static async removeStudent(classId: string, studentId: string) {
-    return apiClient.delete(`/classes/${classId}/students/${studentId}`);
   }
 }
 
 // Location Management API
 export class LocationAPI {
-  /**
-   * Get locations
-   */
   static async getLocations() {
     return apiClient.get('/locations');
   }
 
-  /**
-   * Create location
-   */
   static async createLocation(data: any) {
     return apiClient.post('/locations', data);
   }
 
-  /**
-   * Update location
-   */
   static async updateLocation(id: string, data: any) {
     return apiClient.put(`/locations/${id}`, data);
-  }
-
-  /**
-   * Delete location
-   */
-  static async deleteLocation(id: string) {
-    return apiClient.delete(`/locations/${id}`);
-  }
-
-  /**
-   * Validate WiFi
-   */
-  static async validateWiFi(ssid: string, locationId: string) {
-    return apiClient.post('/locations/validate-wifi', { ssid, locationId });
   }
 }
 
 // System/Admin API
 export class SystemAPI {
-  /**
-   * Get system stats
-   */
   static async getSystemStats() {
     return apiClient.get('/system/stats');
   }
+
+  static async getSystemHealth() {
+    return apiClient.get('/system/health');
+  }
+
+  static async updateSystemConfig(config: any) {
+    return apiClient.post('/system/config', config);
+  }
+}
+
+/**
+ * WebSocket Client for Real-time Updates
+ */
+export class WebSocketClient {
+  private ws: WebSocket | null = null;
+  private url: string;
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
+  private reconnectInterval = 5000;
+  private eventHandlers: Map<string, Function[]> = new Map();
+
+  constructor(url: string = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3000/ws') {
+    this.url = url;
+  }
+
+  connect(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      try {
+        this.ws = new WebSocket(this.url);
+
+        this.ws.onopen = () => {
+          console.log('WebSocket connected');
+          this.reconnectAttempts = 0;
+          resolve();
+        };
+
+        this.ws.onmessage = (event) => {
+          try {
+            const message = JSON.parse(event.data);
+            this.handleMessage(message);
+          } catch (error) {
+            console.error('Failed to parse WebSocket message:', error);
+          }
+        };
+
+        this.ws.onclose = (event) => {
+          console.log('WebSocket disconnected:', event.code, event.reason);
+          this.ws = null;
+          this.attemptReconnect();
+        };
+
+        this.ws.onerror = (error) => {
+          console.error('WebSocket error:', error);
+          reject(error);
+        };
+
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  disconnect(): void {
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+  }
+
+  send(message: any): void {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify(message));
+    } else {
+      console.warn('WebSocket not connected. Cannot send message.');
+    }
+  }
+
+  on(event: string, handler: Function): void {
+    if (!this.eventHandlers.has(event)) {
+      this.eventHandlers.set(event, []);
+    }
+    this.eventHandlers.get(event)!.push(handler);
+  }
+
+  off(event: string, handler: Function): void {
+    const handlers = this.eventHandlers.get(event);
+    if (handlers) {
+      const index = handlers.indexOf(handler);
+      if (index > -1) {
+        handlers.splice(index, 1);
+      }
+    }
+  }
+
+  private handleMessage(message: any): void {
+    const { type, data } = message;
+    const handlers = this.eventHandlers.get(type);
+    if (handlers) {
+      handlers.forEach(handler => handler(data));
+    }
+  }
+
+  private attemptReconnect(): void {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.error('Max reconnection attempts reached');
+      return;
+    }
+
+    this.reconnectAttempts++;
+    console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+
+    setTimeout(() => {
+      this.connect().catch(error => {
+        console.error('Reconnection failed:', error);
+      });
+    }, this.reconnectInterval * this.reconnectAttempts);
+  }
+}
+
+// Create WebSocket client instance
+export const wsClient = new WebSocketClient();
+
+/**
+ * API Cache Manager
+ */
+export class ApiCacheManager {
+  private cache: Map<string, { data: any; timestamp: number; ttl: number }> = new Map();
+
+  set(key: string, data: any, ttl: number = 300000): void { // 5 minutes default
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now(),
+      ttl
+    });
+  }
+
+  get(key: string): any | null {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+
+    if (Date.now() - entry.timestamp > entry.ttl) {
+      this.cache.delete(key);
+      return null;
+    }
+
+    return entry.data;
+  }
+
+  delete(key: string): void {
+    this.cache.delete(key);
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+
+  clearExpired(): void {
+    const now = Date.now();
+    for (const [key, entry] of this.cache.entries()) {
+      if (now - entry.timestamp > entry.ttl) {
+        this.cache.delete(key);
+      }
+    }
+  }
+}
+
+// Create cache manager instance
+export const apiCache = new ApiCacheManager();
+
+/**
+ * Utility Functions
+ */
+
+/**
+ * Create query string from object
+ */
+export function createQueryString(params: Record<string, any>): string {
+  const searchParams = new URLSearchParams();
+  
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      if (Array.isArray(value)) {
+        value.forEach(item => searchParams.append(key, String(item)));
+      } else {
+        searchParams.append(key, String(value));
+      }
+    }
+  });
+  
+  return searchParams.toString();
+}
+
+/**
+ * Handle API errors globally
+ */
+export function handleApiError(error: ApiError): void {
+  console.error('API Error:', error);
+
+  switch (error.code) {
+    case ERROR_CODES.UNAUTHORIZED:
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
+      break;
+      
+    case ERROR_CODES.RATE_LIMIT_EXCEEDED:
+      console.warn('Rate limit exceeded. Please try again later.');
+      break;
+      
+    case ERROR_CODES.SERVICE_UNAVAILABLE:
+      console.warn('Service temporarily unavailable.');
+      break;
+      
+    default:
+      console.error('An unexpected error occurred.');
+  }
+}
+
+/**
+ * Retry failed requests with exponential backoff
+ */
+export async function retryRequest<T>(
+  requestFn: () => Promise<T>,
+  maxAttempts: number = 3,
+  baseDelay: number = 1000
+): Promise<T> {
+  let lastError: Error;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      return await requestFn();
+    } catch (error) {
+      lastError = error as Error;
+      
+      if (attempt < maxAttempts - 1) {
+        const delay = baseDelay * Math.pow(2, attempt);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  throw lastError!;
+}
+
+/**
+ * Request queue for managing concurrent requests
+ */
+export class RequestQueue {
+  private queue: Array<() => Promise<any>> = [];
+  private running = false;
+  private concurrency = 5;
+
+  add<T>(requestFn: () => Promise<T>): Promise<T> {
+    return new Promise((resolve, reject) => {
+      this.queue.push(async () => {
+        try {
+          const result = await requestFn();
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
+      });
+
+      if (!this.running) {
+        this.process();
+      }
+    });
+  }
+
+  private async process(): Promise<void> {
+    this.running = true;
+
+    while (this.queue.length > 0) {
+      const batch = this.queue.splice(0, this.concurrency);
+      await Promise.all(batch.map(request => request()));
+    }
+
+    this.running = false;
+  }
+}
+
+// Create request queue instance
+export const requestQueue = new RequestQueue();
+
+/**
+ * Upload progress tracking
+ */
+export interface UploadProgress {
+  loaded: number;
+  total: number;
+  percentage: number;
+}
+
+export class FileUploader {
+  static async uploadWithProgress(
+    endpoint: string,
+    file: File,
+    onProgress?: (progress: UploadProgress) => void,
+    additionalData?: Record<string, any>
+  ): Promise<ApiResponse> {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      const formData = new FormData();
+      
+      formData.append('file', file);
+      
+      if (additionalData) {
+        Object.entries(additionalData).forEach(([key, value]) => {
+          formData.append(key, String(value));
+        });
+      }
+
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable && onProgress) {
+          onProgress({
+            loaded: event.loaded,
+            total: event.total,
+            percentage: Math.round((event.loaded / event.total) * 100)
+          });
+        }
+      });
+
+      xhr.addEventListener('load', () => {
+        try {
+          const response = JSON.parse(xhr.responseText);
+          resolve(response);
+        } catch (error) {
+          reject(new Error('Invalid response format'));
+        }
+      });
+
+      xhr.addEventListener('error', () => {
+        reject(new Error('Upload failed'));
+      });
+
+      xhr.open('POST', `/api${endpoint}`);
+      
+      const token = typeof localStorage !== 'undefined' ? localStorage.getItem('auth_token') : null;
+      if (token) {
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      }
+      
+      xhr.send(formData);
+    });
+  }
+}
+
+export default apiClient;
