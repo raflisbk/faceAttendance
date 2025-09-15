@@ -479,4 +479,319 @@ export const UserProfile: React.FC<UserProfileProps> = ({
             </CardHeader>
             <CardContent>
               <Form {...form}>
-                <form className="space-y-4"></form>
+                <form className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Full Name</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              disabled={!isEditing}
+                              icon={<User className="w-4 h-4" />}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email Address</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="email"
+                              disabled={!isEditing}
+                              icon={<Mail className="w-4 h-4" />}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone Number</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="tel"
+                              disabled={!isEditing}
+                              icon={<Phone className="w-4 h-4" />}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="department"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Department</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              disabled={!isEditing}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {userData.role === 'STUDENT' && (
+                      <FormField
+                        control={form.control}
+                        name="studentId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Student ID</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                disabled={!isEditing}
+                                icon={<IdCard className="w-4 h-4" />}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+
+                    {userData.role === 'LECTURER' && (
+                      <FormField
+                        control={form.control}
+                        name="employeeId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Employee ID</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                disabled={!isEditing}
+                                icon={<IdCard className="w-4 h-4" />}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+                  </div>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+
+          {/* Face Profile Status */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Camera className="w-5 h-5" />
+                Face Recognition Profile
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center",
+                      userData.faceProfile.enrolled 
+                        ? "bg-green-100 dark:bg-green-900/20" 
+                        : "bg-yellow-100 dark:bg-yellow-900/20"
+                    )}>
+                      {userData.faceProfile.enrolled ? (
+                        <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                      ) : (
+                        <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                      )}
+                    </div>
+                    
+                    <div>
+                      <p className="font-medium text-slate-800 dark:text-slate-200">
+                        {userData.faceProfile.enrolled ? 'Face Profile Active' : 'Face Profile Incomplete'}
+                      </p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">
+                        {userData.faceProfile.enrolled
+                          ? `Quality: ${FormatUtils.formatConfidence(userData.faceProfile.qualityScore || 0)}`
+                          : 'Face enrollment required for attendance'
+                        }
+                      </p>
+                    </div>
+                  </div>
+
+                  {userData.faceProfile.enrolled && (
+                    <Button
+                      onClick={handleFaceReEnrollment}
+                      variant="chalkOutline"
+                      size="sm"
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Re-enroll
+                    </Button>
+                  )}
+                </div>
+
+                {userData.faceProfile.enrolled && userData.faceProfile.enrolledAt && (
+                  <div className="text-sm text-slate-600 dark:text-slate-400">
+                    <p>
+                      Enrolled on {FormatUtils.formatDateTime(userData.faceProfile.enrolledAt)}
+                    </p>
+                    <p>
+                      {userData.faceProfile.images.length} training images captured
+                    </p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Documents Status */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="w-5 h-5" />
+                Document Verification
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {userData.documents.length === 0 ? (
+                <div className="text-center py-6">
+                  <AlertTriangle className="w-12 h-12 mx-auto text-yellow-500 mb-3" />
+                  <p className="text-slate-600 dark:text-slate-400 mb-2">
+                    No documents uploaded
+                  </p>
+                  <p className="text-sm text-slate-500 dark:text-slate-500">
+                    Upload your ID document for verification
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {userData.documents.map((doc, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 border border-slate-200 dark:border-slate-700 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "w-8 h-8 rounded-full flex items-center justify-center",
+                          doc.status === 'APPROVED' 
+                            ? "bg-green-100 dark:bg-green-900/20"
+                            : doc.status === 'REJECTED'
+                            ? "bg-red-100 dark:bg-red-900/20" 
+                            : "bg-yellow-100 dark:bg-yellow-900/20"
+                        )}>
+                          {doc.status === 'APPROVED' ? (
+                            <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                          ) : doc.status === 'REJECTED' ? (
+                            <X className="w-4 h-4 text-red-600 dark:text-red-400" />
+                          ) : (
+                            <Clock className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                          )}
+                        </div>
+                        
+                        <div>
+                          <p className="font-medium text-slate-800 dark:text-slate-200">
+                            {doc.type.replace('_', ' ')}
+                          </p>
+                          <p className="text-sm text-slate-600 dark:text-slate-400">
+                            Uploaded {FormatUtils.formatDate(doc.uploadedAt)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium",
+                          doc.status === 'APPROVED' 
+                            ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300"
+                            : doc.status === 'REJECTED'
+                            ? "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300"
+                            : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300"
+                        )}>
+                          {doc.status}
+                        </span>
+                        
+                        <Button
+                          onClick={() => window.open(doc.fileUrl, '_blank')}
+                          variant="ghost"
+                          size="sm"
+                        >
+                          <Download className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Attendance Statistics */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="w-5 h-5" />
+                Attendance Statistics
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="text-center p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                  <p className="text-2xl font-bold text-slate-800 dark:text-slate-200">
+                    {userData.attendanceStats.totalClasses}
+                  </p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Total Classes
+                  </p>
+                </div>
+                
+                <div className="text-center p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    {userData.attendanceStats.attendedClasses}
+                  </p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Classes Attended
+                  </p>
+                </div>
+                
+                <div className="text-center p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    {Math.round(userData.attendanceStats.attendanceRate * 100)}%
+                  </p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Attendance Rate
+                  </p>
+                </div>
+              </div>
+
+              {userData.attendanceStats.lastAttendance && (
+                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    <strong>Last Attendance:</strong> {DateUtils.getRelativeTime(userData.attendanceStats.lastAttendance)}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <ConfirmDialog />
+    </div>
+  )
+}
