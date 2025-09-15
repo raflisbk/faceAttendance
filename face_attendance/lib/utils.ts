@@ -54,50 +54,42 @@ export class FormatUtils {
   }
 
   /**
-   * Format duration in minutes to readable string
+   * Format duration in milliseconds to human readable format
    */
-  static formatDuration(minutes: number): string {
+  static formatDuration(milliseconds: number): string {
+    const seconds = Math.floor(milliseconds / 1000)
+    const minutes = Math.floor(seconds / 60)
     const hours = Math.floor(minutes / 60)
-    const mins = minutes % 60
-    
-    if (hours === 0) return `${mins}m`
-    if (mins === 0) return `${hours}h`
-    return `${hours}h ${mins}m`
+    const days = Math.floor(hours / 24)
+
+    if (days > 0) return `${days}d ${hours % 24}h`
+    if (hours > 0) return `${hours}h ${minutes % 60}m`
+    if (minutes > 0) return `${minutes}m ${seconds % 60}s`
+    return `${seconds}s`
   }
 
   /**
-   * Format file size to readable string
+   * Format file size to human readable format
    */
   static formatFileSize(bytes: number): string {
-    const sizes = ['B', 'KB', 'MB', 'GB']
-    if (bytes === 0) return '0 B'
-    
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
+    if (bytes === 0) return '0 Bytes'
     const i = Math.floor(Math.log(bytes) / Math.log(1024))
-    const size = bytes / Math.pow(1024, i)
-    
-    return `${size.toFixed(1)} ${sizes[i]}`
+    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i]
   }
 
   /**
-   * Format confidence percentage
+   * Format number with commas
    */
-  static formatConfidence(confidence: number): string {
-    return `${Math.round(confidence * 100)}%`
+  static formatNumber(num: number): string {
+    return new Intl.NumberFormat('en-US').format(num)
   }
 
   /**
-   * Format user role for display
+   * Format percentage
    */
-  static formatRole(role: string): string {
-    return role.toLowerCase().replace('_', ' ')
-  }
-
-  /**
-   * Format attendance count
-   */
-  static formatAttendanceCount(present: number, total: number): string {
-    const percentage = total > 0 ? Math.round((present / total) * 100) : 0
-    return `${present}/${total} (${percentage}%)`
+  static formatPercentage(value: number, decimals: number = 1): string {
+    return `${(value * 100).toFixed(decimals)}%`
   }
 }
 
@@ -106,7 +98,7 @@ export class FormatUtils {
  */
 export class ValidationUtils {
   /**
-   * Validate email format
+   * Check if email is valid
    */
   static isValidEmail(email: string): boolean {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -114,258 +106,117 @@ export class ValidationUtils {
   }
 
   /**
-   * Validate phone number (Indonesian format)
+   * Check if password meets requirements
+   */
+  static isValidPassword(password: string): {
+    isValid: boolean
+    errors: string[]
+  } {
+    const errors: string[] = []
+    
+    if (password.length < 8) {
+      errors.push('Password must be at least 8 characters long')
+    }
+    if (!/[A-Z]/.test(password)) {
+      errors.push('Password must contain at least one uppercase letter')
+    }
+    if (!/[a-z]/.test(password)) {
+      errors.push('Password must contain at least one lowercase letter')
+    }
+    if (!/[0-9]/.test(password)) {
+      errors.push('Password must contain at least one number')
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      errors.push('Password must contain at least one special character')
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    }
+  }
+
+  /**
+   * Check if phone number is valid
    */
   static isValidPhone(phone: string): boolean {
-    const phoneRegex = /^(\+62|62|0)[0-9]{9,13}$/
-    return phoneRegex.test(phone.replace(/\s/g, ''))
+    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/
+    return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''))
   }
 
   /**
-   * Validate student ID format
+   * Check if URL is valid
    */
-  static isValidStudentId(studentId: string): boolean {
-    // Assuming format: 2 digits year + 2 digits faculty + 4 digits number
-    const studentIdRegex = /^[0-9]{8}$/
-    return studentIdRegex.test(studentId)
-  }
-
-  /**
-   * Validate image file type
-   */
-  static isValidImageFile(file: File): boolean {
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
-    return validTypes.includes(file.type)
-  }
-
-  /**
-   * Validate face descriptor array
-   */
-  static isValidFaceDescriptor(descriptor: any): boolean {
-    return descriptor instanceof Float32Array && descriptor.length === 128
-  }
-
-  /**
-   * Validate WiFi SSID format
-   */
-  static isValidSSID(ssid: string): boolean {
-    return ssid.length >= 1 && ssid.length <= 32
+  static isValidUrl(url: string): boolean {
+    try {
+      new URL(url)
+      return true
+    } catch {
+      return false
+    }
   }
 }
 
 /**
- * Security utilities
+ * String utilities
  */
-export class SecurityUtils {
+export class StringUtils {
   /**
-   * Generate random string for tokens
+   * Capitalize first letter
+   */
+  static capitalize(str: string): string {
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
+  }
+
+  /**
+   * Convert to title case
+   */
+  static toTitleCase(str: string): string {
+    return str.replace(/\w\S*/g, (txt) => 
+      txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+    )
+  }
+
+  /**
+   * Generate random string
    */
   static generateRandomString(length: number): string {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
     let result = ''
     for (let i = 0; i < length; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length))
+      result += characters.charAt(Math.floor(Math.random() * characters.length))
     }
     return result
   }
 
   /**
-   * Generate OTP code
+   * Truncate string with ellipsis
    */
-  static generateOTP(length: number = 6): string {
-    const digits = '0123456789'
-    let otp = ''
-    for (let i = 0; i < length; i++) {
-      otp += digits.charAt(Math.floor(Math.random() * digits.length))
-    }
-    return otp
+  static truncate(str: string, maxLength: number): string {
+    if (str.length <= maxLength) return str
+    return str.slice(0, maxLength - 3) + '...'
   }
 
   /**
-   * Mask email for privacy
+   * Convert string to slug
    */
-  static maskEmail(email: string): string {
-    const [username, domain] = email.split('@')
-    if (username.length <= 2) return email
-    
-    const masked = username.charAt(0) + '*'.repeat(username.length - 2) + username.charAt(username.length - 1)
-    return `${masked}@${domain}`
+  static toSlug(str: string): string {
+    return str
+      .toLowerCase()
+      .replace(/[^\w ]+/g, '')
+      .replace(/ +/g, '-')
   }
 
   /**
-   * Mask phone number for privacy
+   * Extract initials from name
    */
-  static maskPhone(phone: string): string {
-    if (phone.length <= 4) return phone
-    return phone.substring(0, 2) + '*'.repeat(phone.length - 4) + phone.substring(phone.length - 2)
-  }
-
-  /**
-   * Sanitize filename
-   */
-  static sanitizeFilename(filename: string): string {
-    return filename.replace(/[^a-zA-Z0-9.-]/g, '_')
-  }
-}
-
-/**
- * Date/Time utilities
- */
-export class DateUtils {
-  /**
-   * Check if date is today
-   */
-  static isToday(date: Date | string): boolean {
-    const dateObj = typeof date === 'string' ? new Date(date) : date
-    const today = new Date()
-    
-    return dateObj.getDate() === today.getDate() &&
-           dateObj.getMonth() === today.getMonth() &&
-           dateObj.getFullYear() === today.getFullYear()
-  }
-
-  /**
-   * Check if date is within time range
-   */
-  static isWithinTimeRange(
-    date: Date | string,
-    startTime: string,
-    endTime: string
-  ): boolean {
-    const dateObj = typeof date === 'string' ? new Date(date) : date
-    const currentTime = dateObj.getHours() * 60 + dateObj.getMinutes()
-    
-    const [startHour, startMin] = startTime.split(':').map(Number)
-    const [endHour, endMin] = endTime.split(':').map(Number)
-    
-    const start = startHour * 60 + startMin
-    const end = endHour * 60 + endMin
-    
-    return currentTime >= start && currentTime <= end
-  }
-
-  /**
-   * Get time difference in minutes
-   */
-  static getTimeDifferenceMinutes(date1: Date, date2: Date): number {
-    return Math.abs(date1.getTime() - date2.getTime()) / (1000 * 60)
-  }
-
-  /**
-   * Add minutes to date
-   */
-  static addMinutes(date: Date, minutes: number): Date {
-    return new Date(date.getTime() + minutes * 60000)
-  }
-
-  /**
-   * Get start of day
-   */
-  static getStartOfDay(date: Date = new Date()): Date {
-    const startOfDay = new Date(date)
-    startOfDay.setHours(0, 0, 0, 0)
-    return startOfDay
-  }
-
-  /**
-   * Get end of day
-   */
-  static getEndOfDay(date: Date = new Date()): Date {
-    const endOfDay = new Date(date)
-    endOfDay.setHours(23, 59, 59, 999)
-    return endOfDay
-  }
-
-  /**
-   * Get day name from date
-   */
-  static getDayName(date: Date | string): string {
-    const dateObj = typeof date === 'string' ? new Date(date) : date
-    return dateObj.toLocaleDateString('en-US', { weekday: 'long' })
-  }
-
-  /**
-   * Get relative time string (e.g., "2 hours ago")
-   */
-  static getRelativeTime(date: Date | string): string {
-    const dateObj = typeof date === 'string' ? new Date(date) : date
-    const now = new Date()
-    const diffMs = now.getTime() - dateObj.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
-    const diffHours = Math.floor(diffMins / 60)
-    const diffDays = Math.floor(diffHours / 24)
-
-    if (diffMins < 1) return 'Just now'
-    if (diffMins < 60) return `${diffMins} minute${diffMins === 1 ? '' : 's'} ago`
-    if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`
-    if (diffDays < 7) return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`
-    
-    return FormatUtils.formatDate(dateObj)
-  }
-}
-
-/**
- * Storage utilities for browser storage
- */
-export class StorageUtils {
-  /**
-   * Set item in localStorage with expiration
-   */
-  static setWithExpiry(key: string, value: any, ttlMs: number): void {
-    const now = new Date()
-    const item = {
-      value: value,
-      expiry: now.getTime() + ttlMs,
-    }
-    localStorage.setItem(key, JSON.stringify(item))
-  }
-
-  /**
-   * Get item from localStorage with expiration check
-   */
-  static getWithExpiry(key: string): any | null {
-    const itemStr = localStorage.getItem(key)
-    if (!itemStr) return null
-
-    try {
-      const item = JSON.parse(itemStr)
-      const now = new Date()
-
-      if (now.getTime() > item.expiry) {
-        localStorage.removeItem(key)
-        return null
-      }
-
-      return item.value
-    } catch {
-      localStorage.removeItem(key)
-      return null
-    }
-  }
-
-  /**
-   * Clear expired items from localStorage
-   */
-  static clearExpired(): void {
-    const now = new Date().getTime()
-    
-    for (let i = localStorage.length - 1; i >= 0; i--) {
-      const key = localStorage.key(i)
-      if (!key) continue
-
-      try {
-        const itemStr = localStorage.getItem(key)
-        if (!itemStr) continue
-
-        const item = JSON.parse(itemStr)
-        if (item.expiry && now > item.expiry) {
-          localStorage.removeItem(key)
-        }
-      } catch {
-        // Invalid JSON, remove it
-        localStorage.removeItem(key)
-      }
-    }
+  static getInitials(name: string): string {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
   }
 }
 
@@ -381,170 +232,134 @@ export class ArrayUtils {
   }
 
   /**
+   * Chunk array into smaller arrays
+   */
+  static chunk<T>(array: T[], size: number): T[][] {
+    const chunks: T[][] = []
+    for (let i = 0; i < array.length; i += size) {
+      chunks.push(array.slice(i, i + size))
+    }
+    return chunks
+  }
+
+  /**
+   * Shuffle array
+   */
+  static shuffle<T>(array: T[]): T[] {
+    const shuffled = [...array]
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+    }
+    return shuffled
+  }
+
+  /**
    * Group array by key
    */
   static groupBy<T>(array: T[], key: keyof T): Record<string, T[]> {
     return array.reduce((groups, item) => {
-      const groupKey = String(item[key])
-      if (!groups[groupKey]) {
-        groups[groupKey] = []
-      }
-      groups[groupKey].push(item)
+      const group = String(item[key])
+      groups[group] = groups[group] || []
+      groups[group].push(item)
       return groups
     }, {} as Record<string, T[]>)
   }
+}
+
+/**
+ * Object utilities
+ */
+export class ObjectUtils {
+  /**
+   * Deep clone object
+   */
+  static deepClone<T>(obj: T): T {
+    return JSON.parse(JSON.stringify(obj))
+  }
 
   /**
-   * Sort array by date field
+   * Check if object is empty
    */
-  static sortByDate<T>(array: T[], dateKey: keyof T, ascending: boolean = true): T[] {
-    return [...array].sort((a, b) => {
-      const dateA = new Date(a[dateKey] as any).getTime()
-      const dateB = new Date(b[dateKey] as any).getTime()
-      return ascending ? dateA - dateB : dateB - dateA
+  static isEmpty(obj: object): boolean {
+    return Object.keys(obj).length === 0
+  }
+
+  /**
+   * Pick specific keys from object
+   */
+  static pick<T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
+    const result = {} as Pick<T, K>
+    keys.forEach(key => {
+      if (key in obj) {
+        result[key] = obj[key]
+      }
     })
+    return result
   }
 
   /**
-   * Paginate array
+   * Omit specific keys from object
    */
-  static paginate<T>(array: T[], page: number, limit: number): T[] {
-    const startIndex = (page - 1) * limit
-    return array.slice(startIndex, startIndex + limit)
-  }
-}
-
-/**
- * URL utilities
- */
-export class UrlUtils {
-  /**
-   * Build query string from object
-   */
-  static buildQueryString(params: Record<string, any>): string {
-    const filteredParams = Object.entries(params)
-      .filter(([_, value]) => value !== null && value !== undefined && value !== '')
-      .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
-    
-    return filteredParams.length > 0 ? `?${filteredParams.join('&')}` : ''
-  }
-
-  /**
-   * Parse query string to object
-   */
-  static parseQueryString(queryString: string): Record<string, string> {
-    const params: Record<string, string> = {}
-    const urlParams = new URLSearchParams(queryString)
-    
-    for (const [key, value] of urlParams) {
-      params[key] = value
-    }
-    
-    return params
-  }
-
-  /**
-   * Get base URL for API calls
-   */
-  static getBaseUrl(): string {
-    if (typeof window !== 'undefined') {
-      return window.location.origin
-    }
-    return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  static omit<T, K extends keyof T>(obj: T, keys: K[]): Omit<T, K> {
+    const result = { ...obj }
+    keys.forEach(key => {
+      delete result[key]
+    })
+    return result
   }
 }
 
 /**
- * Error handling utilities
+ * Local storage utilities with error handling
  */
-export class ErrorUtils {
+export class StorageUtils {
   /**
-   * Extract error message from various error types
+   * Get item from localStorage with fallback
    */
-  static getErrorMessage(error: unknown): string {
-    if (error instanceof Error) {
-      return error.message
-    }
-    
-    if (typeof error === 'string') {
-      return error
-    }
-    
-    if (error && typeof error === 'object' && 'message' in error) {
-      return String(error.message)
-    }
-    
-    return 'An unknown error occurred'
-  }
-
-  /**
-   * Create standardized error response
-   */
-  static createErrorResponse(message: string, code?: string): { error: string; code?: string } {
-    return {
-      error: message,
-      ...(code && { code })
+  static getItem<T>(key: string, fallback: T): T {
+    try {
+      const item = localStorage.getItem(key)
+      return item ? JSON.parse(item) : fallback
+    } catch {
+      return fallback
     }
   }
 
   /**
-   * Log error with context
+   * Set item to localStorage
    */
-  static logError(error: unknown, context?: string): void {
-    const message = this.getErrorMessage(error)
-    const logMessage = context ? `[${context}] ${message}` : message
-    
-    console.error(logMessage, error)
-    
-    // In production, you might want to send this to an error tracking service
-    if (process.env.NODE_ENV === 'production') {
-      // Example: Sentry.captureException(error)
+  static setItem<T>(key: string, value: T): boolean {
+    try {
+      localStorage.setItem(key, JSON.stringify(value))
+      return true
+    } catch {
+      return false
     }
   }
-}
 
-/**
- * Device/Browser utilities
- */
-export class DeviceUtils {
   /**
-   * Check if device is mobile
+   * Remove item from localStorage
    */
-  static isMobile(): boolean {
-    if (typeof window === 'undefined') return false
-    return window.innerWidth < 768
+  static removeItem(key: string): boolean {
+    try {
+      localStorage.removeItem(key)
+      return true
+    } catch {
+      return false
+    }
   }
 
   /**
-   * Check if device supports camera
+   * Clear all localStorage
    */
-  static supportsCamera(): boolean {
-    return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)
-  }
-
-  /**
-   * Check if device supports geolocation
-   */
-  static supportsGeolocation(): boolean {
-    return 'geolocation' in navigator
-  }
-
-  /**
-   * Get device info string
-   */
-  static getDeviceInfo(): string {
-    if (typeof window === 'undefined') return 'Server'
-    
-    const { userAgent } = navigator
-    const mobile = this.isMobile() ? 'Mobile' : 'Desktop'
-    
-    let browser = 'Unknown'
-    if (userAgent.includes('Chrome')) browser = 'Chrome'
-    else if (userAgent.includes('Firefox')) browser = 'Firefox'
-    else if (userAgent.includes('Safari')) browser = 'Safari'
-    else if (userAgent.includes('Edge')) browser = 'Edge'
-    
-    return `${mobile} ${browser}`
+  static clear(): boolean {
+    try {
+      localStorage.clear()
+      return true
+    } catch {
+      return false
+    }
   }
 }
 
@@ -553,65 +368,165 @@ export class DeviceUtils {
  */
 export class FaceUtils {
   /**
-   * Calculate face descriptor distance
+   * Convert canvas to blob
    */
-  static calculateDistance(desc1: Float32Array, desc2: Float32Array): number {
-    if (desc1.length !== desc2.length) {
-      throw new Error('Descriptors must have the same length')
-    }
-    
-    let sum = 0
-    for (let i = 0; i < desc1.length; i++) {
-      const diff = desc1[i] - desc2[i]
-      sum += diff * diff
-    }
-    
-    return Math.sqrt(sum)
-  }
-
-  /**
-   * Find best match from array of descriptors
-   */
-  static findBestMatch(
-    targetDescriptor: Float32Array,
-    descriptors: Float32Array[],
-    threshold: number = 0.6
-  ): { index: number; distance: number } | null {
-    let bestMatch = null
-    let minDistance = Infinity
-
-    descriptors.forEach((descriptor, index) => {
-      const distance = this.calculateDistance(targetDescriptor, descriptor)
-      if (distance < minDistance && distance < threshold) {
-        minDistance = distance
-        bestMatch = { index, distance }
-      }
+  static canvasToBlob(canvas: HTMLCanvasElement, quality: number = 0.9): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve(blob)
+        } else {
+          reject(new Error('Failed to convert canvas to blob'))
+        }
+      }, 'image/jpeg', quality)
     })
-
-    return bestMatch
   }
 
   /**
-   * Validate face quality metrics
+   * Resize image while maintaining aspect ratio
    */
-  static validateFaceQuality(quality: {
-    score: number
-    brightness: number
-    sharpness: number
-    faceSize: number
-  }): { valid: boolean; issues: string[] } {
-    const issues: string[] = []
+  static resizeImage(
+    file: File, 
+    maxWidth: number, 
+    maxHeight: number, 
+    quality: number = 0.9
+  ): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+        
+        if (!ctx) {
+          reject(new Error('Failed to get canvas context'))
+          return
+        }
 
-    if (quality.score < 0.7) issues.push('Face quality too low')
-    if (quality.brightness < 0.3) issues.push('Image too dark')
-    if (quality.brightness > 0.9) issues.push('Image too bright')
-    if (quality.sharpness < 0.5) issues.push('Image too blurry')
-    if (quality.faceSize < 80) issues.push('Face too small')
-    if (quality.faceSize > 500) issues.push('Face too large')
+        const ratio = Math.min(maxWidth / img.width, maxHeight / img.height)
+        canvas.width = img.width * ratio
+        canvas.height = img.height * ratio
 
-    return {
-      valid: issues.length === 0,
-      issues
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(blob)
+          } else {
+            reject(new Error('Failed to resize image'))
+          }
+        }, 'image/jpeg', quality)
+      }
+      
+      img.onerror = () => reject(new Error('Failed to load image'))
+      img.src = URL.createObjectURL(file)
+    })
+  }
+
+  /**
+   * Calculate face detection confidence score
+   */
+  static calculateConfidence(detections: any[]): number {
+    if (detections.length === 0) return 0
+    const avgConfidence = detections.reduce((sum, detection) => 
+      sum + (detection.detection?.score || 0), 0) / detections.length
+    return Math.round(avgConfidence * 100)
+  }
+
+  /**
+   * Check if face is centered in frame
+   */
+  static isFaceCentered(
+    detection: any, 
+    frameWidth: number, 
+    frameHeight: number, 
+    tolerance: number = 0.3
+  ): boolean {
+    if (!detection?.detection?.box) return false
+    
+    const { x, y, width, height } = detection.detection.box
+    const faceCenterX = x + width / 2
+    const faceCenterY = y + height / 2
+    const frameCenterX = frameWidth / 2
+    const frameCenterY = frameHeight / 2
+    
+    const distanceX = Math.abs(faceCenterX - frameCenterX) / frameWidth
+    const distanceY = Math.abs(faceCenterY - frameCenterY) / frameHeight
+    
+    return distanceX <= tolerance && distanceY <= tolerance
+  }
+}
+
+/**
+ * Error handling utilities
+ */
+export class ErrorUtils {
+  /**
+   * Create user-friendly error message
+   */
+  static getUserFriendlyMessage(error: any): string {
+    if (typeof error === 'string') return error
+    
+    if (error?.message) {
+      const message = error.message.toLowerCase()
+      
+      if (message.includes('network')) return 'Network connection error. Please check your internet connection.'
+      if (message.includes('timeout')) return 'Request timed out. Please try again.'
+      if (message.includes('unauthorized')) return 'You are not authorized to perform this action.'
+      if (message.includes('forbidden')) return 'Access denied. Please check your permissions.'
+      if (message.includes('not found')) return 'The requested resource was not found.'
+      if (message.includes('validation')) return 'Please check your input and try again.'
+      
+      return error.message
     }
+    
+    return 'An unexpected error occurred. Please try again.'
+  }
+
+  /**
+   * Log error with context
+   */
+  static logError(error: any, context?: string): void {
+    const errorInfo = {
+      message: error?.message || 'Unknown error',
+      stack: error?.stack,
+      context,
+      timestamp: new Date().toISOString(),
+      userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'Unknown'
+    }
+    
+    console.error('Application Error:', errorInfo)
+  }
+}
+
+/**
+ * Environment utilities
+ */
+export class EnvUtils {
+  /**
+   * Check if running in development
+   */
+  static isDevelopment(): boolean {
+    return process.env.NODE_ENV === 'development'
+  }
+
+  /**
+   * Check if running in production
+   */
+  static isProduction(): boolean {
+    return process.env.NODE_ENV === 'production'
+  }
+
+  /**
+   * Check if running in browser
+   */
+  static isBrowser(): boolean {
+    return typeof window !== 'undefined'
+  }
+
+  /**
+   * Get environment variable with fallback
+   */
+  static getEnvVar(key: string, fallback: string = ''): string {
+    return process.env[key] || fallback
   }
 }
