@@ -1,13 +1,49 @@
 // components/ui/student-dashboard.tsx
 'use client'
 
-import React, { useState } from 'react'
-import { Calendar, BookOpen, TrendingUp, Clock, MapPin, User, QrCode } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { 
+  Calendar, 
+  BookOpen, 
+  TrendingUp, 
+  Clock, 
+  MapPin, 
+  User, 
+  QrCode,
+  Target,
+  CheckCircle,
+  AlertCircle,
+  Trophy,
+  BarChart3,
+  GraduationCap,
+  Bell,
+  Settings,
+  Camera,
+  Wifi,
+  Battery,
+  Signal
+} from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { AttendanceStatistics } from './attendance-statistics'
+import { Badge } from '@/components/ui/badge'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { useToastHelpers } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
+import { FormatUtils, DateUtils } from '@/lib/utils'
+
+interface StudentInfo {
+  id: string
+  name: string
+  studentId: string
+  email: string
+  semester: number
+  major: string
+  gpa: number
+  profileImage?: string
+  enrollmentDate: Date
+  graduationYear: number
+}
 
 interface ClassSchedule {
   id: string
@@ -15,51 +51,167 @@ interface ClassSchedule {
   code: string
   lecturerName: string
   time: string
+  endTime: string
   location: string
   room: string
-  status: 'upcoming' | 'ongoing' | 'completed'
+  building: string
+  status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled'
   attendanceStatus?: 'present' | 'absent' | 'late' | null
+  isCheckInAvailable: boolean
+  classType: 'lecture' | 'lab' | 'seminar' | 'exam'
+  credits: number
 }
 
 interface AttendanceRecord {
   id: string
+  classId: string
   className: string
   date: Date
   status: 'present' | 'absent' | 'late'
   checkInTime?: Date
+  method: 'face' | 'qr' | 'manual'
   location: string
+  confidence?: number
+}
+
+interface AttendanceStats {
+  totalClasses: number
+  attendedClasses: number
+  attendanceRate: number
+  lateCount: number
+  upcomingClasses: number
+  streakDays: number
+  missedClasses: number
+  onTimeRate: number
+  monthlyTrend: number
+}
+
+interface Achievement {
+  id: string
+  title: string
+  description: string
+  icon: string
+  category: 'attendance' | 'academic' | 'participation'
+  unlockedAt: Date
+  progress?: number
+  maxProgress?: number
 }
 
 interface StudentDashboardProps {
-  studentInfo: {
-    name: string
-    studentId: string
-    semester: number
-    gpa: number
-    profileImage?: string
-  }
-  todaySchedule: ClassSchedule[]
-  recentAttendance: AttendanceRecord[]
-  attendanceStats: {
-    totalClasses: number
-    attendedClasses: number
-    attendanceRate: number
-    lateCount: number
-    upcomingClasses: number
-  }
-  onCheckIn?: (classId: string) => void
+  studentId: string
   className?: string
 }
 
-export function StudentDashboard({
-  studentInfo,
-  todaySchedule,
-  recentAttendance,
-  attendanceStats,
-  onCheckIn,
-  className
-}: StudentDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'schedule' | 'history'>('overview')
+export function StudentDashboard({ studentId, className }: StudentDashboardProps) {
+  const [studentInfo, setStudentInfo] = useState<StudentInfo | null>(null)
+  const [todaySchedule, setTodaySchedule] = useState<ClassSchedule[]>([])
+  const [recentAttendance, setRecentAttendance] = useState<AttendanceRecord[]>([])
+  const [attendanceStats, setAttendanceStats] = useState<AttendanceStats | null>(null)
+  const [achievements, setAchievements] = useState<Achievement[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<'overview' | 'schedule' | 'history' | 'achievements'>('overview')
+  const [currentTime, setCurrentTime] = useState(new Date())
+
+  const toast = useToastHelpers()
+
+  useEffect(() => {
+    loadStudentData()
+    
+    // Update current time every minute
+    const timeInterval = setInterval(() => {
+      setCurrentTime(new Date())
+    }, 60000)
+
+    // Refresh data every 5 minutes
+    const dataInterval = setInterval(() => {
+      loadStudentData(true)
+    }, 300000)
+
+    return () => {
+      clearInterval(timeInterval)
+      clearInterval(dataInterval)
+    }
+  }, [studentId])
+
+  const loadStudentData = async (silent: boolean = false) => {
+    try {
+      if (!silent) setIsLoading(true)
+
+      const [studentRes, scheduleRes, attendanceRes, statsRes, achievementsRes] = await Promise.all([
+        fetch(`/api/students/${studentId}`),
+        fetch(`/api/students/${studentId}/schedule/today`),
+        fetch(`/api/students/${studentId}/attendance/recent`),
+        fetch(`/api/students/${studentId}/stats`),
+        fetch(`/api/students/${studentId}/achievements`)
+      ])
+
+      if (studentRes.ok) {
+        const studentData = await studentRes.json()
+        setStudentInfo({
+          ...studentData,
+          enrollmentDate: new Date(studentData.enrollmentDate)
+        })
+      }
+
+      if (scheduleRes.ok) {
+        const scheduleData = await scheduleRes.json()
+        setTodaySchedule(scheduleData.schedule)
+      }
+
+      if (attendanceRes.ok) {
+        const attendanceData = await attendanceRes.json()
+        setRecentAttendance(attendanceData.records.map((record: any) => ({
+          ...record,
+          date: new Date(record.date),
+          checkInTime: record.checkInTime ? new Date(record.checkInTime) : undefined
+        })))
+      }
+
+      if (statsRes.ok) {
+        const statsData = await statsRes.json()
+        setAttendanceStats(statsData.stats)
+      }
+
+      if (achievementsRes.ok) {
+        const achievementsData = await achievementsRes.json()
+        setAchievements(achievementsData.achievements.map((achievement: any) => ({
+          ...achievement,
+          unlockedAt: new Date(achievement.unlockedAt)
+        })))
+      }
+
+    } catch (error) {
+      console.error('Error loading student data:', error)
+      if (!silent) toast.error('Failed to load dashboard data')
+    } finally {
+      if (!silent) setIsLoading(false)
+    }
+  }
+
+  const handleCheckIn = async (classId: string) => {
+    try {
+      const response = await fetch(`/api/attendance/check-in`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          classId, 
+          studentId, 
+          method: 'qr' 
+        })
+      })
+
+      if (response.ok) {
+        toast.success('Successfully checked in!')
+        loadStudentData(true)
+      } else {
+        const error = await response.json()
+        toast.error(error.message || 'Check-in failed')
+      }
+    } catch (error) {
+      console.error('Check-in error:', error)
+      toast.error('Check-in failed')
+    }
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -68,28 +220,57 @@ export function StudentDashboard({
       case 'late': return 'text-yellow-600 dark:text-yellow-400'
       case 'upcoming': return 'text-blue-600 dark:text-blue-400'
       case 'ongoing': return 'text-orange-600 dark:text-orange-400'
+      case 'completed': return 'text-slate-600 dark:text-slate-400'
+      case 'cancelled': return 'text-red-600 dark:text-red-400'
       default: return 'text-slate-600 dark:text-slate-400'
     }
   }
 
   const getStatusBadge = (status: string) => {
-    const colors = {
-      'present': 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300',
-      'absent': 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300',
-      'late': 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300',
-      'upcoming': 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300',
-      'ongoing': 'bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300',
-      'completed': 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-    }
-    
+    const variants = {
+      'present': 'present',
+      'absent': 'absent', 
+      'late': 'late',
+      'upcoming': 'info',
+      'ongoing': 'warning',
+      'completed': 'secondary',
+      'cancelled': 'destructive'
+    } as const
+
     return (
-      <span className={cn('px-2 py-1 text-xs rounded-full', colors[status as keyof typeof colors])}>
+      <Badge variant={variants[status as keyof typeof variants] || 'secondary'}>
         {status.charAt(0).toUpperCase() + status.slice(1)}
-      </span>
+      </Badge>
     )
   }
 
-  const upcomingClass = todaySchedule.find(c => c.status === 'upcoming')
+  const getClassTypeIcon = (type: string) => {
+    switch (type) {
+      case 'lecture': return <BookOpen className="w-4 h-4" />
+      case 'lab': return <Settings className="w-4 h-4" />
+      case 'seminar': return <User className="w-4 h-4" />
+      case 'exam': return <GraduationCap className="w-4 h-4" />
+      default: return <BookOpen className="w-4 h-4" />
+    }
+  }
+
+  const nextClass = todaySchedule.find(c => c.status === 'upcoming')
+  const ongoingClass = todaySchedule.find(c => c.status === 'ongoing')
+
+  if (isLoading) {
+    return <LoadingSpinner size="lg" text="Loading your dashboard..." className="py-12" />
+  }
+
+  if (!studentInfo || !attendanceStats) {
+    return (
+      <div className="text-center py-12">
+        <AlertCircle className="w-12 h-12 mx-auto text-red-500 mb-4" />
+        <p className="text-slate-600 dark:text-slate-400">
+          Failed to load student dashboard
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div className={cn("space-y-6", className)}>
@@ -111,23 +292,67 @@ export function StudentDashboard({
             
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-200">
-                Welcome back, {studentInfo.name}!
+                Welcome back, {studentInfo.name.split(' ')[0]}!
               </h1>
               <p className="text-slate-600 dark:text-slate-400">
-                Student ID: {studentInfo.studentId} • Semester {studentInfo.semester} • GPA: {studentInfo.gpa.toFixed(2)}
+                {studentInfo.studentId} • {studentInfo.major} • Semester {studentInfo.semester}
+              </p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                GPA: {studentInfo.gpa.toFixed(2)} • Class of {studentInfo.graduationYear}
               </p>
             </div>
             
-            {upcomingClass && (
-              <div className="text-right">
-                <p className="text-sm text-slate-600 dark:text-slate-400">Next Class</p>
-                <p className="font-medium">{upcomingClass.name}</p>
-                <p className="text-sm text-blue-600 dark:text-blue-400">{upcomingClass.time}</p>
-              </div>
-            )}
+            <div className="text-right hidden md:block">
+              <p className="text-sm text-slate-600 dark:text-slate-400">Current Time</p>
+              <p className="text-lg font-bold text-slate-800 dark:text-slate-200">
+                {currentTime.toLocaleTimeString('en-US', { 
+                  hour12: false,
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {currentTime.toLocaleDateString('en-US', { 
+                  weekday: 'long',
+                  month: 'short',
+                  day: 'numeric'
+                })}
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Current Class Alert */}
+      {ongoingClass && (
+        <Card className="border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
+                <Clock className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-orange-800 dark:text-orange-200">
+                  Class in Session: {ongoingClass.name}
+                </h3>
+                <p className="text-sm text-orange-600 dark:text-orange-300">
+                  {ongoingClass.location} • Until {ongoingClass.endTime}
+                </p>
+              </div>
+              {ongoingClass.isCheckInAvailable && !ongoingClass.attendanceStatus && (
+                <Button 
+                  onClick={() => handleCheckIn(ongoingClass.id)}
+                  variant="chalk"
+                  size="sm"
+                >
+                  <QrCode className="w-4 h-4 mr-2" />
+                  Check In
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -138,8 +363,65 @@ export function StudentDashboard({
                 <TrendingUp className="w-6 h-6 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{attendanceStats.upcomingClasses}</p>
-                <p className="text-sm text-slate-600 dark:text-slate-400">Upcoming Classes</p>
+                <p className="text-2xl font-bold">{attendanceStats.attendanceRate}%</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Attendance Rate</p>
+                <p className={cn(
+                  "text-xs font-medium",
+                  attendanceStats.monthlyTrend > 0 ? "text-green-600" : "text-red-600"
+                )}>
+                  {attendanceStats.monthlyTrend > 0 ? '+' : ''}{attendanceStats.monthlyTrend}% this month
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+                <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{attendanceStats.attendedClasses}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Classes Attended</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  of {attendanceStats.totalClasses} total
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg flex items-center justify-center">
+                <Clock className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{attendanceStats.onTimeRate}%</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">On-Time Rate</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {attendanceStats.lateCount} late arrivals
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
+                <Target className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{attendanceStats.streakDays}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Day Streak</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Keep it up!
+                </p>
               </div>
             </div>
           </CardContent>
@@ -151,7 +433,8 @@ export function StudentDashboard({
         {[
           { key: 'overview', label: 'Overview', icon: TrendingUp },
           { key: 'schedule', label: 'Today\'s Schedule', icon: Calendar },
-          { key: 'history', label: 'Attendance History', icon: BookOpen }
+          { key: 'history', label: 'Attendance History', icon: BookOpen },
+          { key: 'achievements', label: 'Achievements', icon: Trophy }
         ].map(({ key, label, icon: Icon }) => (
           <button
             key={key}
@@ -183,7 +466,15 @@ export function StudentDashboard({
                   <span>Overall Attendance</span>
                   <span>{attendanceStats.attendanceRate}%</span>
                 </div>
-                <Progress value={attendanceStats.attendanceRate} className="h-2" />
+                <Progress value={attendanceStats.attendanceRate} className="h-3" />
+                <div className="flex justify-between text-xs text-slate-500 mt-1">
+                  <span>Target: 80%</span>
+                  <span className={cn(
+                    attendanceStats.attendanceRate >= 80 ? "text-green-600" : "text-red-600"
+                  )}>
+                    {attendanceStats.attendanceRate >= 80 ? "Goal Achieved!" : `${80 - attendanceStats.attendanceRate}% to go`}
+                  </span>
+                </div>
               </div>
               
               <div className="grid grid-cols-2 gap-4 pt-4">
@@ -195,48 +486,70 @@ export function StudentDashboard({
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-                    {attendanceStats.totalClasses - attendanceStats.attendedClasses}
+                    {attendanceStats.missedClasses}
                   </p>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Absent</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">Missed</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Next Class */}
-          {upcomingClass && (
+          {nextClass ? (
             <Card className="border-blue-200 dark:border-blue-800">
               <CardHeader>
                 <CardTitle className="text-blue-700 dark:text-blue-300">Next Class</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <h3 className="font-semibold text-lg">{upcomingClass.name}</h3>
-                  <p className="text-slate-600 dark:text-slate-400">{upcomingClass.code}</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    {getClassTypeIcon(nextClass.classType)}
+                    <h3 className="font-semibold text-lg">{nextClass.name}</h3>
+                    <Badge variant="info">{nextClass.classType}</Badge>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-400">{nextClass.code}</p>
                   <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Lecturer: {upcomingClass.lecturerName}
+                    Lecturer: {nextClass.lecturerName}
+                  </p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Credits: {nextClass.credits}
                   </p>
                 </div>
                 
                 <div className="flex items-center gap-4 text-sm">
                   <div className="flex items-center gap-1">
                     <Clock className="w-4 h-4" />
-                    <span>{upcomingClass.time}</span>
+                    <span>{nextClass.time} - {nextClass.endTime}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <MapPin className="w-4 h-4" />
-                    <span>{upcomingClass.location}</span>
+                    <span>{nextClass.building} - {nextClass.room}</span>
                   </div>
                 </div>
                 
-                <Button 
-                  onClick={() => onCheckIn?.(upcomingClass.id)}
-                  variant="chalk" 
-                  className="w-full"
-                >
-                  <QrCode className="w-4 h-4 mr-2" />
-                  Check In Now
-                </Button>
+                {nextClass.isCheckInAvailable && (
+                  <Button 
+                    onClick={() => handleCheckIn(nextClass.id)}
+                    variant="chalk" 
+                    className="w-full"
+                  >
+                    <QrCode className="w-4 h-4 mr-2" />
+                    Check In Now
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Next Class</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                  <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p className="font-medium">No more classes today</p>
+                  <p className="text-sm">Enjoy your free time!</p>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -264,24 +577,27 @@ export function StudentDashboard({
                       "flex items-center justify-between p-4 rounded-lg border",
                       schedule.status === 'ongoing' && "border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20",
                       schedule.status === 'upcoming' && "border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20",
-                      schedule.status === 'completed' && "border-slate-200 dark:border-slate-700"
+                      schedule.status === 'completed' && "border-slate-200 dark:border-slate-700",
+                      schedule.status === 'cancelled' && "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20"
                     )}
                   >
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
+                        {getClassTypeIcon(schedule.classType)}
                         <h3 className="font-medium">{schedule.name}</h3>
                         {getStatusBadge(schedule.status)}
                         {schedule.attendanceStatus && getStatusBadge(schedule.attendanceStatus)}
+                        <Badge variant="secondary">{schedule.credits} credits</Badge>
                       </div>
                       
                       <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
-                          <span>{schedule.time}</span>
+                          <span>{schedule.time} - {schedule.endTime}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <MapPin className="w-4 h-4" />
-                          <span>{schedule.location} - {schedule.room}</span>
+                          <span>{schedule.building} - {schedule.room}</span>
                         </div>
                       </div>
                       
@@ -290,9 +606,9 @@ export function StudentDashboard({
                       </p>
                     </div>
                     
-                    {schedule.status === 'upcoming' && (
+                    {schedule.isCheckInAvailable && schedule.status === 'upcoming' && !schedule.attendanceStatus && (
                       <Button
-                        onClick={() => onCheckIn?.(schedule.id)}
+                        onClick={() => handleCheckIn(schedule.id)}
                         variant="chalk"
                         size="sm"
                       >
@@ -326,10 +642,10 @@ export function StudentDashboard({
                     key={record.id}
                     className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg"
                   >
-                    <div>
+                    <div className="flex-1">
                       <h4 className="font-medium">{record.className}</h4>
                       <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
-                        <span>{new Date(record.date).toLocaleDateString()}</span>
+                        <span>{DateUtils.formatDate(record.date)}</span>
                         <div className="flex items-center gap-1">
                           <MapPin className="w-3 h-3" />
                           <span>{record.location}</span>
@@ -337,8 +653,19 @@ export function StudentDashboard({
                         {record.checkInTime && (
                           <div className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
-                            <span>{new Date(record.checkInTime).toLocaleTimeString()}</span>
+                            <span>{DateUtils.formatTime(record.checkInTime)}</span>
                           </div>
+                        )}
+                        <div className="flex items-center gap-1">
+                          {record.method === 'face' && <Camera className="w-3 h-3" />}
+                          {record.method === 'qr' && <QrCode className="w-3 h-3" />}
+                          {record.method === 'manual' && <User className="w-3 h-3" />}
+                          <span className="capitalize">{record.method}</span>
+                        </div>
+                        {record.confidence && (
+                          <span className="text-xs">
+                            {Math.round(record.confidence * 100)}% confidence
+                          </span>
                         )}
                       </div>
                     </div>
@@ -351,488 +678,139 @@ export function StudentDashboard({
           </CardContent>
         </Card>
       )}
-    </div>
-  )
-}
 
-// components/ui/lecturer-dashboard.tsx
-'use client'
-
-import React, { useState } from 'react'
-import { Users, BookOpen, TrendingUp, Calendar, Clock, QrCode, BarChart3 } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
-import { QRCodeGenerator } from './qr-code-generator'
-import { cn } from '@/lib/utils'
-
-interface ClassStats {
-  id: string
-  name: string
-  code: string
-  totalStudents: number
-  presentToday: number
-  attendanceRate: number
-  lastSession: Date
-  nextSession: Date
-  location: string
-}
-
-interface StudentAttendance {
-  studentId: string
-  studentName: string
-  email: string
-  attendanceRate: number
-  lastAttended: Date
-  status: 'active' | 'at-risk' | 'critical'
-}
-
-interface LecturerDashboardProps {
-  lecturerInfo: {
-    name: string
-    staffId: string
-    department: string
-    profileImage?: string
-  }
-  classes: ClassStats[]
-  recentActivity: Array<{
-    id: string
-    type: 'attendance' | 'late' | 'absent'
-    studentName: string
-    className: string
-    timestamp: Date
-  }>
-  upcomingClasses: Array<{
-    id: string
-    name: string
-    time: string
-    location: string
-    expectedStudents: number
-  }>
-  onGenerateQR?: (classId: string) => void
-  onViewClassDetails?: (classId: string) => void
-  className?: string
-}
-
-export function LecturerDashboard({
-  lecturerInfo,
-  classes,
-  recentActivity,
-  upcomingClasses,
-  onGenerateQR,
-  onViewClassDetails,
-  className
-}: LecturerDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'classes' | 'activity'>('overview')
-  const [showQRGenerator, setShowQRGenerator] = useState(false)
-  const [selectedClassId, setSelectedClassId] = useState<string | null>(null)
-
-  const totalStudents = classes.reduce((sum, cls) => sum + cls.totalStudents, 0)
-  const avgAttendanceRate = classes.length > 0 
-    ? classes.reduce((sum, cls) => sum + cls.attendanceRate, 0) / classes.length 
-    : 0
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'text-green-600 dark:text-green-400'
-      case 'at-risk': return 'text-yellow-600 dark:text-yellow-400'
-      case 'critical': return 'text-red-600 dark:text-red-400'
-      default: return 'text-slate-600 dark:text-slate-400'
-    }
-  }
-
-  const getAttendanceColor = (rate: number) => {
-    if (rate >= 80) return 'text-green-600 dark:text-green-400'
-    if (rate >= 60) return 'text-yellow-600 dark:text-yellow-400'
-    return 'text-red-600 dark:text-red-400'
-  }
-
-  const nextClass = upcomingClasses[0]
-
-  return (
-    <div className={cn("space-y-6", className)}>
-      {/* Welcome Header */}
-      <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center">
-              {lecturerInfo.profileImage ? (
-                <img 
-                  src={lecturerInfo.profileImage} 
-                  alt="Profile" 
-                  className="w-16 h-16 rounded-full object-cover"
-                />
-              ) : (
-                <Users className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
-              )}
+      {activeTab === 'achievements' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {achievements.length === 0 ? (
+            <div className="col-span-full text-center py-12 text-slate-500 dark:text-slate-400">
+              <Trophy className="w-16 h-16 mx-auto mb-4 opacity-50" />
+              <p className="text-lg font-medium mb-2">No achievements yet</p>
+              <p className="text-sm">Keep attending classes to unlock achievements!</p>
             </div>
-            
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-200">
-                Welcome, Dr. {lecturerInfo.name}
-              </h1>
-              <p className="text-slate-600 dark:text-slate-400">
-                Staff ID: {lecturerInfo.staffId} • {lecturerInfo.department}
-              </p>
-            </div>
-            
-            {nextClass && (
-              <div className="text-right">
-                <p className="text-sm text-slate-600 dark:text-slate-400">Next Class</p>
-                <p className="font-medium">{nextClass.name}</p>
-                <p className="text-sm text-indigo-600 dark:text-indigo-400">{nextClass.time}</p>
-                <Button 
-                  onClick={() => {
-                    setSelectedClassId(nextClass.id)
-                    setShowQRGenerator(true)
-                  }}
-                  variant="chalkOutline" 
-                  size="sm"
-                  className="mt-2"
-                >
-                  <QrCode className="w-4 h-4 mr-2" />
-                  Generate QR
-                </Button>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
-                <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{classes.length}</p>
-                <p className="text-sm text-slate-600 dark:text-slate-400">Active Classes</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
-                <Users className="w-6 h-6 text-green-600 dark:text-green-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{totalStudents}</p>
-                <p className="text-sm text-slate-600 dark:text-slate-400">Total Students</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{avgAttendanceRate.toFixed(1)}%</p>
-                <p className="text-sm text-slate-600 dark:text-slate-400">Avg Attendance</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/20 rounded-lg flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-orange-600 dark:text-orange-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{upcomingClasses.length}</p>
-                <p className="text-sm text-slate-600 dark:text-slate-400">Today's Classes</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Navigation Tabs */}
-      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-700">
-        {[
-          { key: 'overview', label: 'Overview', icon: TrendingUp },
-          { key: 'classes', label: 'My Classes', icon: BookOpen },
-          { key: 'activity', label: 'Recent Activity', icon: BarChart3 }
-        ].map(({ key, label, icon: Icon }) => (
-          <button
-            key={key}
-            onClick={() => setActiveTab(key as any)}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors",
-              activeTab === key
-                ? "border-indigo-500 text-indigo-600 dark:text-indigo-400"
-                : "border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
-            )}
-          >
-            <Icon className="w-4 h-4" />
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab Content */}
-      {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Today's Schedule */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Today's Schedule</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {upcomingClasses.length === 0 ? (
-                <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-                  <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p className="font-medium">No classes scheduled today</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {upcomingClasses.map((cls) => (
-                    <div
-                      key={cls.id}
-                      className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg"
-                    >
-                      <div>
-                        <h4 className="font-medium">{cls.name}</h4>
-                        <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
-                          <div className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            <span>{cls.time}</span>
-                          </div>
-                          <span>{cls.location}</span>
-                          <span>{cls.expectedStudents} students</span>
+          ) : (
+            achievements.map((achievement) => (
+              <Card key={achievement.id} className="overflow-hidden">
+                <CardContent className="p-6">
+                  <div className="text-center space-y-4">
+                    <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center mx-auto">
+                      <Trophy className="w-8 h-8 text-white" />
+                    </div>
+                    
+                    <div>
+                      <h3 className="font-semibold text-lg">{achievement.title}</h3>
+                      <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                        {achievement.description}
+                      </p>
+                    </div>
+                    
+                    {achievement.progress !== undefined && achievement.maxProgress && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Progress</span>
+                          <span>{achievement.progress}/{achievement.maxProgress}</span>
                         </div>
+                        <Progress 
+                          value={(achievement.progress / achievement.maxProgress) * 100} 
+                          className="h-2"
+                        />
                       </div>
-                      
-                      <Button
-                        onClick={() => {
-                          setSelectedClassId(cls.id)
-                          setShowQRGenerator(true)
-                        }}
-                        variant="chalkOutline"
-                        size="sm"
-                      >
-                        <QrCode className="w-4 h-4" />
-                      </Button>
+                    )}
+                    
+                    <div className="flex items-center justify-center gap-2">
+                      <Badge variant={
+                        achievement.category === 'attendance' ? 'chalkBlue' :
+                        achievement.category === 'academic' ? 'chalkGreen' :
+                        'chalkPurple'
+                      }>
+                        {achievement.category}
+                      </Badge>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Recent Activity */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {recentActivity.length === 0 ? (
-                <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-                  <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p className="font-medium">No recent activity</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {recentActivity.slice(0, 5).map((activity) => (
-                    <div
-                      key={activity.id}
-                      className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg"
-                    >
-                      <div className={cn(
-                        "w-2 h-2 rounded-full",
-                        activity.type === 'attendance' && "bg-green-500",
-                        activity.type === 'late' && "bg-yellow-500",
-                        activity.type === 'absent' && "bg-red-500"
-                      )} />
-                      
-                      <div className="flex-1">
-                        <p className="text-sm">
-                          <strong>{activity.studentName}</strong> {activity.type} - {activity.className}
-                        </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          {new Date(activity.timestamp).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {activeTab === 'classes' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {classes.map((cls) => (
-            <Card key={cls.id}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">{cls.name}</CardTitle>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">{cls.code}</p>
-                  </div>
-                  <Button
-                    onClick={() => onViewClassDetails?.(cls.id)}
-                    variant="chalkOutline"
-                    size="sm"
-                  >
-                    View Details
-                  </Button>
-                </div>
-              </CardHeader>
-              
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">Total Students</p>
-                    <p className="text-xl font-bold">{cls.totalStudents}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">Present Today</p>
-                    <p className="text-xl font-bold text-green-600 dark:text-green-400">
-                      {cls.presentToday}
+                    
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Unlocked on {DateUtils.formatDate(achievement.unlockedAt)}
                     </p>
                   </div>
-                </div>
-                
-                <div>
-                  <div className="flex justify-between text-sm mb-2">
-                    <span>Attendance Rate</span>
-                    <span className={getAttendanceColor(cls.attendanceRate)}>
-                      {cls.attendanceRate}%
-                    </span>
-                  </div>
-                  <Progress value={cls.attendanceRate} className="h-2" />
-                </div>
-                
-                <div className="text-sm text-slate-600 dark:text-slate-400">
-                  <p>Location: {cls.location}</p>
-                  <p>Next Session: {new Date(cls.nextSession).toLocaleString()}</p>
-                </div>
-                
-                <Button
-                  onClick={() => {
-                    setSelectedClassId(cls.id)
-                    setShowQRGenerator(true)
-                  }}
-                  variant="chalk"
-                  className="w-full"
-                >
-                  <QrCode className="w-4 h-4 mr-2" />
-                  Generate Attendance QR
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            ))
+          )}
         </div>
       )}
 
-      {activeTab === 'activity' && (
+      {/* Weekly Performance Chart */}
+      {activeTab === 'overview' && (
         <Card>
           <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5" />
+              Weekly Attendance Overview
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentActivity.map((activity) => (
-                <div
-                  key={activity.id}
-                  className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg"
-                >
-                  <div className={cn(
-                    "w-3 h-3 rounded-full",
-                    activity.type === 'attendance' && "bg-green-500",
-                    activity.type === 'late' && "bg-yellow-500",
-                    activity.type === 'absent' && "bg-red-500"
-                  )} />
-                  
-                  <div className="flex-1">
-                    <p className="font-medium">
-                      {activity.studentName} - {activity.type.charAt(0).toUpperCase() + activity.type.slice(1)}
-                    </p>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">
-                      {activity.className}
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {new Date(activity.timestamp).toLocaleString()}
-                    </p>
+              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day, index) => {
+                // Mock data - in real implementation, this would come from API
+                const attendanceRate = Math.max(0, Math.min(100, 70 + Math.random() * 30))
+                const hasClass = index < 5 // Weekdays only for this example
+                
+                return (
+                  <div key={day} className="flex items-center justify-between">
+                    <span className="text-sm font-medium w-20">{day}</span>
+                    <div className="flex-1 mx-4">
+                      {hasClass ? (
+                        <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3">
+                          <div 
+                            className={cn(
+                              "h-3 rounded-full transition-all duration-500",
+                              attendanceRate >= 80 ? "bg-green-500" :
+                              attendanceRate >= 60 ? "bg-yellow-500" : "bg-red-500"
+                            )}
+                            style={{ width: `${attendanceRate}%` }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-3 flex items-center justify-center">
+                          <span className="text-xs text-slate-500">No class</span>
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-sm font-medium w-12 text-right">
+                      {hasClass ? `${Math.round(attendanceRate)}%` : '-'}
+                    </span>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* QR Code Generator Modal */}
-      {showQRGenerator && selectedClassId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-slate-900 rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Generate Attendance QR Code</h3>
-            <QRCodeGenerator
-              classId={selectedClassId}
-              onClose={() => {
-                setShowQRGenerator(false)
-                setSelectedClassId(null)
-              }}
-            />
+      {/* System Status */}
+      <Card className="bg-slate-50 dark:bg-slate-800/50">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                <Wifi className="w-4 h-4" />
+                <span>Connected</span>
+              </div>
+              <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                <Signal className="w-4 h-4" />
+                <span>Strong Signal</span>
+              </div>
+              <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                <Battery className="w-4 h-4" />
+                <span>Face Recognition Ready</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+              <Clock className="w-4 h-4" />
+              <span>Last updated: {DateUtils.getRelativeTime(new Date())}</span>
+            </div>
           </div>
-        </div>
-      )}
+        </CardContent>
+      </Card>
     </div>
   )
 }
-                <p className="text-2xl font-bold">{attendanceStats.attendanceRate}%</p>
-                <p className="text-sm text-slate-600 dark:text-slate-400">Attendance Rate</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
-                <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{attendanceStats.attendedClasses}</p>
-                <p className="text-sm text-slate-600 dark:text-slate-400">Classes Attended</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg flex items-center justify-center">
-                <Clock className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{attendanceStats.lateCount}</p>
-                <p className="text-sm text-slate-600 dark:text-slate-400">Late Arrivals</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div></div>
