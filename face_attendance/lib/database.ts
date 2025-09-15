@@ -251,7 +251,7 @@ export async function withTransaction<T>(
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      return await db.$transaction(async (tx) => {
+      return await db.$transaction(async (tx: Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">) => {
         return await operation(tx);
       }, {
         maxWait: DB_CONSTANTS.CONNECTION_TIMEOUT,
