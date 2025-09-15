@@ -104,7 +104,7 @@ export class ImageProcessor {
     return new Promise((resolve) => {
       canvas.toBlob(
         (blob) => resolve(blob!),
-        `image/${format}`,
+        `image/${format}` as 'image/jpeg' | 'image/png' | 'image/webp',
         quality
       );
     });
@@ -133,7 +133,7 @@ export class ImageProcessor {
       compressed = await new Promise<Blob>((resolve) => {
         canvas.toBlob(
           (blob) => resolve(blob!),
-          `image/${format}`,
+          `image/${format}` as 'image/jpeg' | 'image/webp',
           quality
         );
       });
@@ -180,7 +180,7 @@ export class ImageProcessor {
     return new Promise((resolve) => {
       canvas.toBlob(
         (blob) => resolve(blob!),
-        `image/${format}`,
+        `image/${format}` as 'image/jpeg' | 'image/png' | 'image/webp',
         quality
       );
     });
@@ -237,7 +237,10 @@ export class ImageProcessor {
     const data = imageData.data;
 
     for (let i = 0; i < data.length; i += 4) {
-      const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      const r = data[i] || 0;
+      const g = data[i + 1] || 0;
+      const b = data[i + 2] || 0;
+      const gray = 0.299 * r + 0.587 * g + 0.114 * b;
       data[i] = gray;     // R
       data[i + 1] = gray; // G
       data[i + 2] = gray; // B
@@ -337,7 +340,10 @@ export class ImageProcessor {
 
     // Calculate histogram
     for (let i = 0; i < data.length; i += 4) {
-      const gray = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
+      const r = data[i] || 0;
+      const g = data[i + 1] || 0;
+      const b = data[i + 2] || 0;
+      const gray = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
       histogram[gray]++;
     }
 
@@ -357,14 +363,17 @@ export class ImageProcessor {
 
     // Apply equalization
     for (let i = 0; i < data.length; i += 4) {
-      const gray = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
-      const equalizedGray = cdf[gray];
-      
+      const r = data[i] || 0;
+      const g = data[i + 1] || 0;
+      const b = data[i + 2] || 0;
+      const gray = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+      const equalizedGray = cdf[gray] || 0;
+
       // Maintain color ratios
       const ratio = equalizedGray / (gray || 1);
-      data[i] = Math.min(255, data[i] * ratio);
-      data[i + 1] = Math.min(255, data[i + 1] * ratio);
-      data[i + 2] = Math.min(255, data[i + 2] * ratio);
+      data[i] = Math.min(255, r * ratio);
+      data[i + 1] = Math.min(255, g * ratio);
+      data[i + 2] = Math.min(255, b * ratio);
     }
   }
 
@@ -393,9 +402,9 @@ export class ImageProcessor {
             const pixelX = x + kx - 1;
             const pixelIndex = (pixelY * width + pixelX) * 4;
 
-            r += data[pixelIndex] * kernel[ky][kx];
-            g += data[pixelIndex + 1] * kernel[ky][kx];
-            b += data[pixelIndex + 2] * kernel[ky][kx];
+            r += (data[pixelIndex] || 0) * (kernel[ky]?.[kx] || 0);
+            g += (data[pixelIndex + 1] || 0) * (kernel[ky]?.[kx] || 0);
+            b += (data[pixelIndex + 2] || 0) * (kernel[ky]?.[kx] || 0);
           }
         }
 
@@ -433,9 +442,9 @@ export class ImageProcessor {
             const pixelX = x + kx - 1;
             const pixelIndex = (pixelY * width + pixelX) * 4;
 
-            r += data[pixelIndex] * kernel[ky][kx];
-            g += data[pixelIndex + 1] * kernel[ky][kx];
-            b += data[pixelIndex + 2] * kernel[ky][kx];
+            r += (data[pixelIndex] || 0) * (kernel[ky]?.[kx] || 0);
+            g += (data[pixelIndex + 1] || 0) * (kernel[ky]?.[kx] || 0);
+            b += (data[pixelIndex + 2] || 0) * (kernel[ky]?.[kx] || 0);
           }
         }
 
@@ -454,9 +463,10 @@ export class ImageProcessor {
    */
   private static detectImageFormat(image: HTMLImageElement | File): string {
     if (image instanceof File) {
-      return image.type.split('/')[1] || 'unknown';
+      const format = image.type.split('/')[1];
+      return format || 'unknown';
     }
-    
+
     // For HTMLImageElement, try to detect from src or assume jpeg
     const src = image.src.toLowerCase();
     if (src.includes('.png') || src.includes('data:image/png')) return 'png';
@@ -470,7 +480,7 @@ export class ImageProcessor {
    */
   private static hasTransparency(data: Uint8ClampedArray): boolean {
     for (let i = 3; i < data.length; i += 4) {
-      if (data[i] < 255) return true;
+      if ((data[i] || 255) < 255) return true;
     }
     return false;
   }
@@ -483,7 +493,10 @@ export class ImageProcessor {
     const pixelCount = data.length / 4;
 
     for (let i = 0; i < data.length; i += 4) {
-      const brightness = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      const r = data[i] || 0;
+      const g = data[i + 1] || 0;
+      const b = data[i + 2] || 0;
+      const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
       totalBrightness += brightness;
     }
 
@@ -499,7 +512,10 @@ export class ImageProcessor {
     const pixelCount = data.length / 4;
 
     for (let i = 0; i < data.length; i += 4) {
-      const pixelBrightness = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      const r = data[i] || 0;
+      const g = data[i + 1] || 0;
+      const b = data[i + 2] || 0;
+      const pixelBrightness = 0.299 * r + 0.587 * g + 0.114 * b;
       variance += Math.pow(pixelBrightness - brightness, 2);
     }
 
@@ -516,7 +532,10 @@ export class ImageProcessor {
     // Convert to grayscale first
     const grayData = new Array(width * height);
     for (let i = 0; i < data.length; i += 4) {
-      const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      const r = data[i] || 0;
+      const g = data[i + 1] || 0;
+      const b = data[i + 2] || 0;
+      const gray = 0.299 * r + 0.587 * g + 0.114 * b;
       grayData[i / 4] = gray;
     }
 
@@ -542,7 +561,7 @@ export class ImageProcessor {
             const pixelX = x + kx - 1;
             const pixelIndex = pixelY * width + pixelX;
 
-            response += grayData[pixelIndex] * kernel[ky][kx];
+            response += (grayData[pixelIndex] || 0) * (kernel[ky]?.[kx] || 0);
           }
         }
 
@@ -617,13 +636,16 @@ export class FaceRegionProcessor {
     });
 
     // Then resize to target size
-    const croppedImg = await ImageProcessor.loadImage(croppedBlob);
-    return ImageProcessor.resizeImage(croppedImg, {
+    const croppedUrl = URL.createObjectURL(croppedBlob);
+    const croppedImg = await ImageProcessor.loadImage(croppedUrl);
+    const result = await ImageProcessor.resizeImage(croppedImg, {
       maxWidth: targetSize,
       maxHeight: targetSize,
       quality: 0.95,
       format: 'jpeg'
     });
+    URL.revokeObjectURL(croppedUrl);
+    return result;
   }
 
   /**
@@ -669,7 +691,7 @@ export class FormatConverter {
     return new Promise((resolve) => {
       canvas.toBlob(
         (blob) => resolve(blob!),
-        `image/${targetFormat}`,
+        `image/${targetFormat}` as 'image/jpeg' | 'image/png' | 'image/webp',
         quality
       );
     });
@@ -692,7 +714,7 @@ export class FormatConverter {
     canvas.height = img.height;
     ctx.drawImage(img, 0, 0);
 
-    return canvas.toDataURL(`image/${format}`, quality);
+    return canvas.toDataURL(`image/${format}` as 'image/jpeg' | 'image/png' | 'image/webp', quality);
   }
 
   /**
@@ -721,9 +743,7 @@ export class ImageValidator {
   ): { isValid: boolean; errors: string[] } {
     const {
       maxSize = FILE_UPLOAD.MAX_FILE_SIZE,
-      allowedTypes = FILE_UPLOAD.ALLOWED_IMAGE_TYPES,
-      minDimensions,
-      maxDimensions
+      allowedTypes = FILE_UPLOAD.ALLOWED_IMAGE_TYPES
     } = options;
 
     const errors: string[] = [];
@@ -847,8 +867,8 @@ export class BatchImageProcessor {
           const processed = await processor(image);
           results[i + index] = processed;
         })
-      );
-      
+      ).then(() => {});
+
       processing.push(batchPromise);
     }
 
@@ -991,11 +1011,3 @@ export function formatFileSize(bytes: number): string {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
-// Export all classes and functions
-export {
-  ImageProcessor,
-  FaceRegionProcessor,
-  FormatConverter,
-  ImageValidator,
-  BatchImageProcessor
-};
