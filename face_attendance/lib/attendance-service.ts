@@ -73,7 +73,6 @@ export class AttendanceService {
     status: 'early' | 'open' | 'late' | 'closed'
   } {
     const now = new Date()
-    const currentTime = DateUtils.formatTime(now)
     const currentDate = DateUtils.formatDate(now)
 
     // Check if it's the correct date
@@ -166,7 +165,7 @@ export class AttendanceService {
       classId: classSession.classId,
       date: classSession.date,
       status,
-      checkInTime: DateUtils.formatDateTime(now),
+      checkInTime: FormatUtils.formatDateTime(now),
       method,
       ...options
     }
@@ -405,7 +404,7 @@ export class AttendanceService {
 
     const report = {
       metadata: {
-        generatedAt: DateUtils.formatDateTime(new Date()),
+        generatedAt: FormatUtils.formatDateTime(new Date()),
         totalRecords: records.length,
         dateRange
       },
@@ -434,11 +433,11 @@ export class AttendanceService {
     if (!record.status) errors.push('Status is required')
     if (!record.method) errors.push('Method is required')
 
-    if (record.date && !DateUtils.isValidDate(record.date)) {
+    if (record.date && !this.isValidDate(record.date)) {
       errors.push('Invalid date format')
     }
 
-    if (record.checkInTime && !DateUtils.isValidDateTime(record.checkInTime)) {
+    if (record.checkInTime && !this.isValidDateTime(record.checkInTime)) {
       errors.push('Invalid check-in time format')
     }
 
@@ -472,5 +471,23 @@ export class AttendanceService {
     // In real implementation, query database via API
     console.log('Getting attendance record:', recordId)
     return null
+  }
+
+  private isValidDate(date: string): boolean {
+    try {
+      const parsedDate = new Date(date)
+      return !isNaN(parsedDate.getTime()) && date.length >= 8
+    } catch {
+      return false
+    }
+  }
+
+  private isValidDateTime(dateTime: string): boolean {
+    try {
+      const parsedDateTime = new Date(dateTime)
+      return !isNaN(parsedDateTime.getTime()) && dateTime.length >= 10
+    } catch {
+      return false
+    }
   }
 }

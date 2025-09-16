@@ -93,11 +93,6 @@ export const FaceCapture: React.FC<FaceCaptureProps> = ({
       background: 'checking'
     }
   })
-  const [livenessCheck, setLivenessCheck] = useState({
-    blinkDetected: false,
-    headMovement: false,
-    isChecking: false
-  })
 
   // Load Face API models
   useEffect(() => {
@@ -134,15 +129,20 @@ export const FaceCapture: React.FC<FaceCaptureProps> = ({
     // Brightness assessment
     let totalBrightness = 0
     for (let i = 0; i < data.length; i += 4) {
-      const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3
+      const r = data[i] ?? 0
+      const g = data[i + 1] ?? 0
+      const b = data[i + 2] ?? 0
+      const brightness = (r + g + b) / 3
       totalBrightness += brightness
     }
     const avgBrightness = totalBrightness / (data.length / 4)
-    
+
     // Background complexity assessment (simplified)
     let edgeCount = 0
     for (let i = 0; i < data.length - 4; i += 4) {
-      const diff = Math.abs(data[i] - data[i + 4])
+      const current = data[i] ?? 0
+      const next = data[i + 4] ?? 0
+      const diff = Math.abs(current - next)
       if (diff > 50) edgeCount++
     }
     const backgroundComplexity = edgeCount / (data.length / 4)
@@ -159,25 +159,44 @@ export const FaceCapture: React.FC<FaceCaptureProps> = ({
 
   // Face quality assessment
   const assessFaceQuality = useCallback((detection: faceapi.WithFaceLandmarks<{ detection: faceapi.FaceDetection }>) => {
-    const landmarks = detection.landmarks
-    const box = detection.detection.box
+    const landmarks = detection?.landmarks
+    const box = detection?.detection?.box
+
+    if (!landmarks || !box) {
+      return {
+        score: 0.5,
+        brightness: 0.8,
+        sharpness: 0.9,
+        faceSize: 0,
+        pose: { yaw: 0, pitch: 0, roll: 0 }
+      }
+    }
     
     // Face size assessment
     const faceSize = Math.min(box.width, box.height)
-    const faceArea = box.width * box.height
     
     // Pose estimation from landmarks
-    const nose = landmarks.getNose()
-    const leftEye = landmarks.getLeftEye()
-    const rightEye = landmarks.getRightEye()
-    
-    const eyeCenter = {
-      x: (leftEye[0].x + rightEye[0].x) / 2,
-      y: (leftEye[0].y + rightEye[0].y) / 2
+    const nose = landmarks?.getNose()
+    const leftEye = landmarks?.getLeftEye()
+    const rightEye = landmarks?.getRightEye()
+
+    if (!nose || !leftEye || !rightEye || nose.length < 4 || leftEye.length < 1 || rightEye.length < 1) {
+      return {
+        score: 0.5,
+        brightness: 0.8,
+        sharpness: 0.9,
+        faceSize: faceSize,
+        pose: { yaw: 0, pitch: 0, roll: 0 }
+      }
     }
     
-    const yaw = Math.atan2(nose[3].x - eyeCenter.x, nose[3].y - eyeCenter.y) * 180 / Math.PI
-    const pitch = Math.atan2(nose[3].y - eyeCenter.y, faceSize) * 180 / Math.PI
+    const eyeCenter = {
+      x: ((leftEye[0]?.x ?? 0) + (rightEye[0]?.x ?? 0)) / 2,
+      y: ((leftEye[0]?.y ?? 0) + (rightEye[0]?.y ?? 0)) / 2
+    }
+
+    const yaw = Math.atan2((nose[3]?.x ?? 0) - eyeCenter.x, (nose[3]?.y ?? 0) - eyeCenter.y) * 180 / Math.PI
+    const pitch = Math.atan2((nose[3]?.y ?? 0) - eyeCenter.y, faceSize) * 180 / Math.PI
     
     // Quality scoring
     let qualityScore = 1.0
@@ -205,7 +224,7 @@ export const FaceCapture: React.FC<FaceCaptureProps> = ({
 
     const video = webcamRef.current.video
     const canvas = canvasRef.current
-    if (!canvas) return
+    if (!canvas || !video) return
 
     try {
       // Environment assessment
@@ -217,12 +236,12 @@ export const FaceCapture: React.FC<FaceCaptureProps> = ({
         .withFaceLandmarks()
         .withFaceDescriptor()
 
-      if (detection) {
+      if (detection && detection.detection) {
         const confidence = detection.detection.score
         const quality = assessFaceQuality(detection)
-        
+
         // Distance assessment based on face size
-        const faceSize = Math.min(detection.detection.box.width, detection.detection.box.height)
+        const faceSize = Math.min(detection.detection.box?.width ?? 0, detection.detection.box?.height ?? 0)
         let distance: 'good' | 'too_close' | 'too_far' = 'good'
         if (faceSize > 300) distance = 'too_close'
         else if (faceSize < 120) distance = 'too_far'
@@ -293,6 +312,7 @@ export const FaceCapture: React.FC<FaceCaptureProps> = ({
     }
 
     const video = webcamRef.current.video
+    if (!video) return
     
     try {
       const detection = await faceapi
@@ -327,9 +347,9 @@ export const FaceCapture: React.FC<FaceCaptureProps> = ({
         const captureResult: FaceCaptureResult = {
           descriptor: detection.descriptor,
           image: imageDataUrl,
-          confidence: detection.detection.score,
+          confidence: detection.detection?.score ?? 0,
           quality: detectionState.quality,
-          pose: POSE_REQUIREMENTS[currentPoseIndex].name
+          pose: POSE_REQUIREMENTS[currentPoseIndex]?.name ?? 'center'
         }
 
         if (mode === 'enrollment') {
@@ -379,9 +399,11 @@ export const FaceCapture: React.FC<FaceCaptureProps> = ({
       const timeout = setTimeout(() => {
         captureFace()
       }, 2000)
-      
+
       return () => clearTimeout(timeout)
     }
+
+    return () => {}
   }, [detectionState, captureFace])
 
   const startDetection = () => {

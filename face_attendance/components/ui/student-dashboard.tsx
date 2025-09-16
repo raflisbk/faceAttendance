@@ -2,21 +2,19 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { 
-  Calendar, 
-  BookOpen, 
-  TrendingUp, 
-  Clock, 
-  MapPin, 
-  User, 
+import {
+  Calendar,
+  BookOpen,
+  TrendingUp,
+  Clock,
+  MapPin,
+  User,
   QrCode,
   Target,
-  CheckCircle,
   AlertCircle,
   Trophy,
   BarChart3,
   GraduationCap,
-  Bell,
   Settings,
   Camera,
   Wifi,
@@ -213,18 +211,6 @@ export function StudentDashboard({ studentId, className }: StudentDashboardProps
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'present': return 'text-green-600 dark:text-green-400'
-      case 'absent': return 'text-red-600 dark:text-red-400'
-      case 'late': return 'text-yellow-600 dark:text-yellow-400'
-      case 'upcoming': return 'text-blue-600 dark:text-blue-400'
-      case 'ongoing': return 'text-orange-600 dark:text-orange-400'
-      case 'completed': return 'text-slate-600 dark:text-slate-400'
-      case 'cancelled': return 'text-red-600 dark:text-red-400'
-      default: return 'text-slate-600 dark:text-slate-400'
-    }
-  }
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -653,7 +639,7 @@ export function StudentDashboard({ studentId, className }: StudentDashboardProps
                         {record.checkInTime && (
                           <div className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
-                            <span>{DateUtils.formatTime(record.checkInTime)}</span>
+                            <span>{FormatUtils.formatTime(record.checkInTime)}</span>
                           </div>
                         )}
                         <div className="flex items-center gap-1">

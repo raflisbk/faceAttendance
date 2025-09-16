@@ -30,11 +30,10 @@ import {
   CheckCircle,
   AlertTriangle,
   RefreshCw,
-  Download,
-  Upload
+  Download
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { FormatUtils, DateUtils } from '@/lib/utils'
+import { DateUtils } from '@/lib/utils'
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -88,7 +87,6 @@ interface UserProfileProps {
 
 export const UserProfile: React.FC<UserProfileProps> = ({
   userId,
-  userRole,
   className
 }) => {
   const [userData, setUserData] = useState<UserData | null>(null)
@@ -427,7 +425,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
                   "inline-flex items-center px-3 py-1 rounded-full text-sm font-medium",
                   getRoleColor(userData.role)
                 )}>
-                  {FormatUtils.formatRole(userData.role)}
+                  {userData.role}
                 </span>
                 
                 <span className={cn(
@@ -444,7 +442,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
               <div className="flex items-center justify-between text-sm">
                 <span className="text-slate-500 dark:text-slate-400">Member since</span>
                 <span className="font-medium text-slate-800 dark:text-slate-200">
-                  {FormatUtils.formatDate(userData.createdAt)}
+                  {new Date(userData.createdAt).toLocaleDateString()}
                 </span>
               </div>
               
@@ -452,7 +450,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-500 dark:text-slate-400">Last login</span>
                   <span className="font-medium text-slate-800 dark:text-slate-200">
-                    {DateUtils.getRelativeTime(userData.lastLogin)}
+                    {DateUtils.getRelativeTime(new Date(userData.lastLogin))}
                   </span>
                 </div>
               )}
@@ -630,7 +628,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
                       </p>
                       <p className="text-sm text-slate-600 dark:text-slate-400">
                         {userData.faceProfile.enrolled
-                          ? `Quality: ${FormatUtils.formatConfidence(userData.faceProfile.qualityScore || 0)}`
+                          ? `Quality: ${Math.round((userData.faceProfile.qualityScore || 0) * 100)}%`
                           : 'Face enrollment required for attendance'
                         }
                       </p>
@@ -652,7 +650,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
                 {userData.faceProfile.enrolled && userData.faceProfile.enrolledAt && (
                   <div className="text-sm text-slate-600 dark:text-slate-400">
                     <p>
-                      Enrolled on {FormatUtils.formatDateTime(userData.faceProfile.enrolledAt)}
+                      Enrolled on {new Date(userData.faceProfile.enrolledAt).toLocaleString()}
                     </p>
                     <p>
                       {userData.faceProfile.images.length} training images captured
@@ -709,7 +707,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
                             {doc.type.replace('_', ' ')}
                           </p>
                           <p className="text-sm text-slate-600 dark:text-slate-400">
-                            Uploaded {FormatUtils.formatDate(doc.uploadedAt)}
+                            Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
@@ -782,7 +780,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
               {userData.attendanceStats.lastAttendance && (
                 <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                   <p className="text-sm text-blue-700 dark:text-blue-300">
-                    <strong>Last Attendance:</strong> {DateUtils.getRelativeTime(userData.attendanceStats.lastAttendance)}
+                    <strong>Last Attendance:</strong> {DateUtils.getRelativeTime(new Date(userData.attendanceStats.lastAttendance))}
                   </p>
                 </div>
               )}

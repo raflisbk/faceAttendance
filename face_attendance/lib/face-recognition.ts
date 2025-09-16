@@ -240,21 +240,30 @@ export class FaceRecognitionService {
    * Estimate head pose from landmarks
    */
   private estimatePose(landmarks: faceapi.FaceLandmarks68): { yaw: number; pitch: number; roll: number } {
-    const noseTip = landmarks.getNose()[3]
-    const leftEye = landmarks.getLeftEye()[0]
-    const rightEye = landmarks.getRightEye()[3]
-    const leftMouth = landmarks.getMouth()[0]
-    const rightMouth = landmarks.getMouth()[6]
+    const nose = landmarks.getNose()
+    const leftEye = landmarks.getLeftEye()
+    const rightEye = landmarks.getRightEye()
+    const mouth = landmarks.getMouth()
+
+    if (!nose[3] || !leftEye[0] || !rightEye[3] || !mouth[0] || !mouth[6]) {
+      return { yaw: 0, pitch: 0, roll: 0 }
+    }
+
+    const noseTip = nose[3]
+    const leftEyePoint = leftEye[0]
+    const rightEyePoint = rightEye[3]
+    const leftMouth = mouth[0]
+    const rightMouth = mouth[6]
 
     // Calculate yaw (left-right rotation)
     const eyeCenter = {
-      x: (leftEye.x + rightEye.x) / 2,
-      y: (leftEye.y + rightEye.y) / 2
+      x: (leftEyePoint.x + rightEyePoint.x) / 2,
+      y: (leftEyePoint.y + rightEyePoint.y) / 2
     }
     const yaw = Math.atan2(noseTip.x - eyeCenter.x, noseTip.y - eyeCenter.y) * 180 / Math.PI
 
     // Calculate roll (head tilt)
-    const eyeAngle = Math.atan2(rightEye.y - leftEye.y, rightEye.x - leftEye.x) * 180 / Math.PI
+    const eyeAngle = Math.atan2(rightEyePoint.y - leftEyePoint.y, rightEyePoint.x - leftEyePoint.x) * 180 / Math.PI
     const roll = eyeAngle
 
     // Calculate pitch (up-down rotation) - simplified
@@ -290,9 +299,9 @@ export class FaceRecognitionService {
       let sum = 0
       for (let i = 0; i < data.length; i += 4) {
         // Calculate luminance
-        const r = data[i]
-        const g = data[i + 1]
-        const b = data[i + 2]
+        const r = data[i] ?? 0
+        const g = data[i + 1] ?? 0
+        const b = data[i + 2] ?? 0
         const luminance = 0.299 * r + 0.587 * g + 0.114 * b
         sum += luminance
       }
@@ -332,10 +341,10 @@ export class FaceRecognitionService {
       for (let y = 1; y < height - 1; y++) {
         for (let x = 1; x < width - 1; x++) {
           const idx = (y * width + x) * 4
-          const current = data[idx]
-          const right = data[idx + 4]
-          const down = data[(y + 1) * width * 4 + x * 4]
-          
+          const current = data[idx] ?? 0
+          const right = data[idx + 4] ?? 0
+          const down = data[(y + 1) * width * 4 + x * 4] ?? 0
+
           const gradientX = Math.abs(current - right)
           const gradientY = Math.abs(current - down)
           gradientSum += Math.sqrt(gradientX * gradientX + gradientY * gradientY)

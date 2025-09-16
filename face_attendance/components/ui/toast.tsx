@@ -4,11 +4,11 @@ import { cn } from '@/lib/utils'
 
 interface Toast {
   id: string
-  title?: string
+  title?: string | undefined
   message: string
   type: 'success' | 'error' | 'warning' | 'info'
-  duration?: number
-  persistent?: boolean
+  duration?: number | undefined
+  persistent?: boolean | undefined
 }
 
 interface ToastContextType {
@@ -79,6 +79,7 @@ const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void }> = ({
 
       return () => clearTimeout(timer)
     }
+    return undefined
   }, [toast.id, toast.duration, toast.persistent, onRemove])
 
   return (

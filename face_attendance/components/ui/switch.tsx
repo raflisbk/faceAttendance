@@ -56,7 +56,7 @@ const switchThumbVariants = cva(
 )
 
 export interface SwitchProps
-  extends React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>,
+  extends Omit<React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>, 'onCheckedChange' | 'checked'>,
     VariantProps<typeof switchVariants> {
   label?: string
   description?: string
@@ -64,34 +64,36 @@ export interface SwitchProps
   required?: boolean
   onIcon?: React.ReactNode
   offIcon?: React.ReactNode
+  checked?: boolean
+  onCheckedChange?: ((checked: boolean) => void) | undefined
 }
 
 const Switch = React.forwardRef<
-  React.ElementRef<typeof SwitchPrimitives.Root>,
+  React.ComponentRef<typeof SwitchPrimitives.Root>,
   SwitchProps
->(({ 
-  className, 
-  variant, 
-  size, 
-  label, 
-  description, 
-  error, 
+>(({
+  className,
+  variant,
+  size,
+  label,
+  description,
+  error,
   required,
   onIcon,
   offIcon,
   checked,
   onCheckedChange,
-  ...props 
+  ...props
 }, ref) => {
   return (
     <div className="space-y-2">
       <div className="flex items-center space-x-3">
         <SwitchPrimitives.Root
+          {...props}
           className={cn(switchVariants({ variant, size }), className)}
           ref={ref}
-          checked={checked}
-          onCheckedChange={onCheckedChange}
-          {...props}
+          checked={checked ?? false}
+          onCheckedChange={onCheckedChange ?? (() => {})}
         >
           <SwitchPrimitives.Thumb
             className={cn(
@@ -202,7 +204,7 @@ interface EnhancedSwitchProps extends SwitchProps {
 }
 
 const EnhancedSwitch = React.forwardRef<
-  React.ElementRef<typeof SwitchPrimitives.Root>,
+  React.ComponentRef<typeof SwitchPrimitives.Root>,
   EnhancedSwitchProps
 >(({ loading, loadingText = "Processing...", ...props }, ref) => {
   return (

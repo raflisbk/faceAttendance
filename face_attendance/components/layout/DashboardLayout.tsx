@@ -57,41 +57,10 @@ interface Notification {
 }
 
 interface SystemStatus {
-  onlineimport React, { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import {
-  LayoutDashboard,
-  Users,
-  Calendar,
-  Camera,
-  Settings,
-  LogOut,
-  Menu,
-  X,
-  Bell,
-  Search,
-  User,
-  BookOpen,
-  MapPin,
-  BarChart3,
-  Clock,
-  Shield,
-  ChevronDown,
-  Home
-} from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { USER_ROLES } from '@/lib/constants'
-
-interface User {
-  id: string
-  name: string
-  email: string
-  role: 'ADMIN' | 'LECTURER' | 'STUDENT'
-  avatar?: string
-  status: 'APPROVED' | 'PENDING' | 'REJECTED'
+  online: boolean
+  faceRecognition: boolean
+  database: boolean
+  redis: boolean
 }
 
 interface DashboardLayoutProps {

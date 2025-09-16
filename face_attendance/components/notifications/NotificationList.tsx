@@ -2,21 +2,17 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { 
-  Bell, 
-  CheckCircle, 
-  AlertTriangle, 
-  Info, 
-  X, 
-  Clock, 
-  User, 
-  Calendar, 
-  Camera,
+import {
+  Bell,
+  CheckCircle,
+  AlertTriangle,
+  Info,
+  User,
+  Calendar,
   Shield,
   Settings,
   Trash2,
-  MarkAsRead,
-  Filter,
+  Check,
   Search,
   ChevronDown,
   Dot
@@ -29,7 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useToastHelpers } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
-import { FormatUtils, DateUtils } from '@/lib/utils'
+import { DateUtils } from '@/lib/utils'
 
 export type NotificationType = 
   | 'info' 
@@ -356,7 +352,7 @@ export function NotificationList({
                 variant="chalkOutline"
                 size="sm"
               >
-                <MarkAsRead className="w-4 h-4 mr-2" />
+                <Check className="w-4 h-4 mr-2" />
                 Mark All Read
               </Button>
             )}
@@ -571,7 +567,7 @@ export function NotificationList({
                           className="h-8 w-8 p-0"
                           title="Mark as read"
                         >
-                          <MarkAsRead className="w-4 h-4" />
+                          <Check className="w-4 h-4" />
                         </Button>
                       )}
                       

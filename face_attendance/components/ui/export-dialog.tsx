@@ -1,8 +1,7 @@
-// components/ui/export-dialog.tsx
 'use client'
 
 import React, { useState } from 'react'
-import { Download, FileSpreadsheet, FileText, Calendar, Filter, Users } from 'lucide-react'
+import { Download, FileSpreadsheet, FileText, Calendar, Users } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -33,7 +32,6 @@ interface ExportDialogProps {
   exportType: 'attendance' | 'students' | 'classes' | 'reports'
   availableClasses?: Array<{ id: string; name: string }>
   availableColumns?: Array<{ key: string; label: string; required?: boolean }>
-  className?: string
 }
 
 export function ExportDialog({
@@ -42,8 +40,7 @@ export function ExportDialog({
   onExport,
   exportType,
   availableClasses = [],
-  availableColumns = [],
-  className
+  availableColumns = []
 }: ExportDialogProps) {
   const [isExporting, setIsExporting] = useState(false)
   const [exportOptions, setExportOptions] = useState<ExportOptions>({
@@ -197,10 +194,12 @@ export function ExportDialog({
                     id="startDate"
                     type="date"
                     value={exportOptions.startDate?.toISOString().split('T')[0] || ''}
-                    onChange={(e) => setExportOptions(prev => ({
-                      ...prev,
-                      startDate: e.target.value ? new Date(e.target.value) : undefined
-                    }))}
+                    onChange={(e) => {
+                      setExportOptions(prev => ({
+                        ...prev,
+                        startDate: e.target.value ? new Date(e.target.value) : undefined
+                      } as ExportOptions))
+                    }}
                   />
                 </div>
                 <div>
@@ -209,10 +208,12 @@ export function ExportDialog({
                     id="endDate"
                     type="date"
                     value={exportOptions.endDate?.toISOString().split('T')[0] || ''}
-                    onChange={(e) => setExportOptions(prev => ({
-                      ...prev,
-                      endDate: e.target.value ? new Date(e.target.value) : undefined
-                    }))}
+                    onChange={(e) => {
+                      setExportOptions(prev => ({
+                        ...prev,
+                        endDate: e.target.value ? new Date(e.target.value) : undefined
+                      } as ExportOptions))
+                    }}
                   />
                 </div>
               </div>
@@ -255,13 +256,15 @@ export function ExportDialog({
               <Label className="text-base font-medium">Filter by Classes</Label>
               <Select 
                 value={exportOptions.filterBy?.classes?.[0] || 'all'}
-                onValueChange={(value) => setExportOptions(prev => ({
-                  ...prev,
-                  filterBy: {
-                    ...prev.filterBy,
-                    classes: value === 'all' ? undefined : [value]
+                onValueChange={(value) => {
+                  const updatedFilterBy = { ...exportOptions.filterBy }
+                  if (value === 'all') {
+                    delete updatedFilterBy.classes
+                  } else {
+                    updatedFilterBy.classes = [value]
                   }
-                }))}
+                  setExportOptions(prev => ({ ...prev, filterBy: updatedFilterBy }))
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select classes to include" />
@@ -366,393 +369,5 @@ export function ExportDialog({
         </div>
       </DialogContent>
     </Dialog>
-  )
-}
-
-// components/ui/checkbox.tsx
-'use client'
-
-import * as React from 'react'
-import * as CheckboxPrimitive from '@radix-ui/react-checkbox'
-import { Check } from 'lucide-react'
-import { cn } from '@/lib/utils'
-
-const Checkbox = React.forwardRef<
-  React.ElementRef<typeof CheckboxPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>
->(({ className, ...props }, ref) => (
-  <CheckboxPrimitive.Root
-    ref={ref}
-    className={cn(
-      'peer h-4 w-4 shrink-0 rounded-sm border border-slate-200 ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-slate-900 data-[state=checked]:text-slate-50 dark:border-slate-800 dark:ring-offset-slate-950 dark:focus-visible:ring-slate-300 dark:data-[state=checked]:bg-slate-50 dark:data-[state=checked]:text-slate-900',
-      className
-    )}
-    {...props}
-  >
-    <CheckboxPrimitive.Indicator
-      className={cn('flex items-center justify-center text-current')}
-    >
-      <Check className="h-4 w-4" />
-    </CheckboxPrimitive.Indicator>
-  </CheckboxPrimitive.Root>
-))
-Checkbox.displayName = CheckboxPrimitive.Root.displayName
-
-export { Checkbox }
-
-// components/ui/report-generator.tsx
-'use client'
-
-import React, { useState } from 'react'
-import { BarChart3, PieChart, TrendingUp, Download, Calendar, Filter, Users, BookOpen } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { ExportDialog } from './export-dialog'
-import { AttendanceStatistics } from './attendance-statistics'
-import { cn } from '@/lib/utils'
-
-interface ReportConfig {
-  type: 'attendance' | 'performance' | 'trends' | 'summary'
-  period: 'daily' | 'weekly' | 'monthly' | 'semester' | 'custom'
-  startDate?: Date
-  endDate?: Date
-  groupBy: 'class' | 'student' | 'date' | 'location'
-  includeCharts: boolean
-  includeComparisons: boolean
-}
-
-interface ReportData {
-  title: string
-  summary: {
-    totalClasses: number
-    totalStudents: number
-    overallAttendanceRate: number
-    trend: 'up' | 'down' | 'stable'
-    trendPercentage: number
-  }
-  charts?: Array<{
-    type: 'bar' | 'line' | 'pie'
-    title: string
-    data: any[]
-  }>
-  tables?: Array<{
-    title: string
-    headers: string[]
-    rows: any[][]
-  }>
-  insights?: string[]
-}
-
-interface ReportGeneratorProps {
-  onGenerateReport?: (config: ReportConfig) => Promise<ReportData>
-  availableClasses?: Array<{ id: string; name: string }>
-  className?: string
-}
-
-export function ReportGenerator({
-  onGenerateReport,
-  availableClasses = [],
-  className
-}: ReportGeneratorProps) {
-  const [reportConfig, setReportConfig] = useState<ReportConfig>({
-    type: 'attendance',
-    period: 'monthly',
-    groupBy: 'class',
-    includeCharts: true,
-    includeComparisons: false
-  })
-
-  const [reportData, setReportData] = useState<ReportData | null>(null)
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [showExportDialog, setShowExportDialog] = useState(false)
-
-  const reportTypes = [
-    { value: 'attendance', label: 'Attendance Report', icon: Users },
-    { value: 'performance', label: 'Performance Analysis', icon: TrendingUp },
-    { value: 'trends', label: 'Trend Analysis', icon: BarChart3 },
-    { value: 'summary', label: 'Executive Summary', icon: BookOpen }
-  ]
-
-  const periods = [
-    { value: 'daily', label: 'Daily' },
-    { value: 'weekly', label: 'Weekly' },
-    { value: 'monthly', label: 'Monthly' },
-    { value: 'semester', label: 'Semester' },
-    { value: 'custom', label: 'Custom Range' }
-  ]
-
-  const groupByOptions = [
-    { value: 'class', label: 'By Class' },
-    { value: 'student', label: 'By Student' },
-    { value: 'date', label: 'By Date' },
-    { value: 'location', label: 'By Location' }
-  ]
-
-  const handleGenerateReport = async () => {
-    setIsGenerating(true)
-    try {
-      const data = await onGenerateReport?.(reportConfig)
-      if (data) {
-        setReportData(data)
-      } else {
-        // Mock data for demonstration
-        setReportData({
-          title: `${reportConfig.type.charAt(0).toUpperCase() + reportConfig.type.slice(1)} Report`,
-          summary: {
-            totalClasses: 24,
-            totalStudents: 156,
-            overallAttendanceRate: 87.5,
-            trend: 'up',
-            trendPercentage: 5.2
-          },
-          insights: [
-            'Attendance rate has improved by 5.2% compared to last period',
-            'Monday classes show highest attendance rates (92%)',
-            'Evening classes have lower attendance (78%) compared to morning classes (91%)',
-            'Computer Science classes have the highest engagement'
-          ]
-        })
-      }
-    } catch (error) {
-      console.error('Failed to generate report:', error)
-    } finally {
-      setIsGenerating(false)
-    }
-  }
-
-  const getTrendIcon = (trend: string) => {
-    switch (trend) {
-      case 'up': return <TrendingUp className="w-4 h-4 text-green-600 dark:text-green-400" />
-      case 'down': return <TrendingUp className="w-4 h-4 text-red-600 dark:text-red-400 rotate-180" />
-      default: return <TrendingUp className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-    }
-  }
-
-  const getTrendColor = (trend: string) => {
-    switch (trend) {
-      case 'up': return 'text-green-600 dark:text-green-400'
-      case 'down': return 'text-red-600 dark:text-red-400'
-      default: return 'text-slate-600 dark:text-slate-400'
-    }
-  }
-
-  return (
-    <div className={cn("space-y-6", className)}>
-      {/* Report Configuration */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="w-5 h-5" />
-            Generate Report
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Report Type */}
-          <div className="space-y-3">
-            <Label className="text-base font-medium">Report Type</Label>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {reportTypes.map(({ value, label, icon: Icon }) => (
-                <button
-                  key={value}
-                  onClick={() => setReportConfig(prev => ({ ...prev, type: value as any }))}
-                  className={cn(
-                    "flex flex-col items-center gap-2 p-4 rounded-lg border transition-colors",
-                    reportConfig.type === value
-                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
-                      : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
-                  )}
-                >
-                  <Icon className="w-6 h-6" />
-                  <span className="text-sm font-medium text-center">{label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Configuration Options */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="period">Time Period</Label>
-              <Select 
-                value={reportConfig.period} 
-                onValueChange={(value: any) => setReportConfig(prev => ({ ...prev, period: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {periods.map(period => (
-                    <SelectItem key={period.value} value={period.value}>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
-                        {period.label}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="groupBy">Group By</Label>
-              <Select 
-                value={reportConfig.groupBy} 
-                onValueChange={(value: any) => setReportConfig(prev => ({ ...prev, groupBy: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {groupByOptions.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      <div className="flex items-center gap-2">
-                        <Filter className="w-4 h-4" />
-                        {option.label}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-end">
-              <Button 
-                onClick={handleGenerateReport}
-                disabled={isGenerating}
-                variant="chalk"
-                className="w-full"
-              >
-                {isGenerating ? 'Generating...' : 'Generate Report'}
-              </Button>
-            </div>
-          </div>
-
-          {/* Custom Date Range */}
-          {reportConfig.period === 'custom' && (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="startDate">Start Date</Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={reportConfig.startDate?.toISOString().split('T')[0] || ''}
-                  onChange={(e) => setReportConfig(prev => ({
-                    ...prev,
-                    startDate: e.target.value ? new Date(e.target.value) : undefined
-                  }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="endDate">End Date</Label>
-                <Input
-                  id="endDate"
-                  type="date"
-                  value={reportConfig.endDate?.toISOString().split('T')[0] || ''}
-                  onChange={(e) => setReportConfig(prev => ({
-                    ...prev,
-                    endDate: e.target.value ? new Date(e.target.value) : undefined
-                  }))}
-                />
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Generated Report */}
-      {reportData && (
-        <div className="space-y-6">
-          {/* Report Header */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-xl">{reportData.title}</CardTitle>
-                <Button 
-                  onClick={() => setShowExportDialog(true)}
-                  variant="chalkOutline"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Export Report
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                    {reportData.summary.totalClasses}
-                  </p>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Total Classes</p>
-                </div>
-                
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                    {reportData.summary.totalStudents}
-                  </p>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Total Students</p>
-                </div>
-                
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                    {reportData.summary.overallAttendanceRate}%
-                  </p>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Attendance Rate</p>
-                </div>
-                
-                <div className="text-center">
-                  <div className="flex items-center justify-center gap-1">
-                    {getTrendIcon(reportData.summary.trend)}
-                    <p className={cn("text-2xl font-bold", getTrendColor(reportData.summary.trend))}>
-                      {reportData.summary.trendPercentage}%
-                    </p>
-                  </div>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Trend</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Insights */}
-          {reportData.insights && reportData.insights.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Key Insights</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {reportData.insights.map((insight, index) => (
-                    <div key={index} className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
-                      <p className="text-sm text-blue-800 dark:text-blue-200">{insight}</p>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Charts and Visualizations */}
-          <AttendanceStatistics 
-            title="Detailed Analytics"
-            showCharts={reportConfig.includeCharts}
-          />
-        </div>
-      )}
-
-      {/* Export Dialog */}
-      <ExportDialog
-        isOpen={showExportDialog}
-        onClose={() => setShowExportDialog(false)}
-        onExport={async (options) => {
-          console.log('Exporting report with options:', options)
-          // Handle export logic here
-        }}
-        exportType="reports"
-        availableClasses={availableClasses}
-      />
-    </div>
   )
 }

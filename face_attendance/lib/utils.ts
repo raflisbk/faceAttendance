@@ -10,6 +10,106 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Date and time utilities
+ */
+export class DateUtils {
+  /**
+   * Get current date in ISO format
+   */
+  static getCurrentDate(): Date {
+    return new Date()
+  }
+
+  /**
+   * Format date for display
+   */
+  static formatForDisplay(date: Date | string): string {
+    const dateObj = typeof date === 'string' ? new Date(date) : date
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }).format(dateObj)
+  }
+
+  /**
+   * Get date range for period
+   */
+  static getDateRange(period: 'today' | 'week' | 'month' | 'year'): { start: Date; end: Date } {
+    const now = new Date()
+    const start = new Date()
+    const end = new Date()
+
+    switch (period) {
+      case 'today':
+        start.setHours(0, 0, 0, 0)
+        end.setHours(23, 59, 59, 999)
+        break
+      case 'week':
+        const day = now.getDay()
+        start.setDate(now.getDate() - day)
+        start.setHours(0, 0, 0, 0)
+        end.setDate(start.getDate() + 6)
+        end.setHours(23, 59, 59, 999)
+        break
+      case 'month':
+        start.setDate(1)
+        start.setHours(0, 0, 0, 0)
+        end.setMonth(start.getMonth() + 1, 0)
+        end.setHours(23, 59, 59, 999)
+        break
+      case 'year':
+        start.setMonth(0, 1)
+        start.setHours(0, 0, 0, 0)
+        end.setMonth(11, 31)
+        end.setHours(23, 59, 59, 999)
+        break
+    }
+
+    return { start, end }
+  }
+
+  /**
+   * Check if date is within range
+   */
+  static isWithinRange(date: Date, start: Date, end: Date): boolean {
+    return date >= start && date <= end
+  }
+
+  /**
+   * Get relative time string
+   */
+  static getRelativeTime(date: Date): string {
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffSeconds = Math.floor(diffMs / 1000)
+    const diffMinutes = Math.floor(diffSeconds / 60)
+    const diffHours = Math.floor(diffMinutes / 60)
+    const diffDays = Math.floor(diffHours / 24)
+
+    if (diffSeconds < 60) return 'Just now'
+    if (diffMinutes < 60) return `${diffMinutes} minutes ago`
+    if (diffHours < 24) return `${diffHours} hours ago`
+    if (diffDays < 7) return `${diffDays} days ago`
+
+    return FormatUtils.formatDate(date)
+  }
+
+  /**
+   * Format date to readable string
+   */
+  static formatDate(date: Date | string, options?: Intl.DateTimeFormatOptions): string {
+    const dateObj = typeof date === 'string' ? new Date(date) : date
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      ...options
+    }).format(dateObj)
+  }
+}
+
+/**
  * Format utilities for various data types
  */
 export class FormatUtils {
@@ -90,6 +190,29 @@ export class FormatUtils {
    */
   static formatPercentage(value: number, decimals: number = 1): string {
     return `${(value * 100).toFixed(decimals)}%`
+  }
+
+  /**
+   * Format user role for display
+   */
+  static formatRole(role: string): string {
+    switch (role) {
+      case 'ADMIN':
+        return 'Administrator'
+      case 'LECTURER':
+        return 'Lecturer'
+      case 'STUDENT':
+        return 'Student'
+      default:
+        return StringUtils.capitalize(role)
+    }
+  }
+
+  /**
+   * Format confidence score
+   */
+  static formatConfidence(confidence: number): string {
+    return `${Math.round(confidence * 100)}%`
   }
 }
 
@@ -172,8 +295,8 @@ export class StringUtils {
    * Convert to title case
    */
   static toTitleCase(str: string): string {
-    return str.replace(/\w\S*/g, (txt) => 
-      txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+    return str.replace(/\w\S*/g, (txt) =>
+      txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase()
     )
   }
 
@@ -249,7 +372,9 @@ export class ArrayUtils {
     const shuffled = [...array]
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1))
-      ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+      const temp = shuffled[i]
+      shuffled[i] = shuffled[j]
+      shuffled[j] = temp
     }
     return shuffled
   }
@@ -288,7 +413,7 @@ export class ObjectUtils {
   /**
    * Pick specific keys from object
    */
-  static pick<T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
+  static pick<T extends Record<string, any>, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
     const result = {} as Pick<T, K>
     keys.forEach(key => {
       if (key in obj) {

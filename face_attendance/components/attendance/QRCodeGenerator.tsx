@@ -95,6 +95,8 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
         }
       }
     }
+
+    return () => {}
   }, [autoRefresh, qrCodeData, selectedClass, sessionDuration])
 
   const loadClasses = async () => {
@@ -166,14 +168,6 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
 
   const generateQRCodeImage = async (token: string, sessionId: string) => {
     try {
-      // QR Code data
-      const qrData = JSON.stringify({
-        type: 'ATTENDANCE_SESSION',
-        sessionId,
-        token,
-        timestamp: new Date().toISOString()
-      })
-
       // Generate QR code using a library or service
       // For demo purposes, we'll use a simple placeholder
       // In real implementation, use libraries like qrcode.js or API service
@@ -556,7 +550,7 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
                         ? "text-green-600 dark:text-green-400"
                         : "text-red-600 dark:text-red-400"
                     )}>
-                      {DateUtils.getRelativeTime(qrCodeData.expiresAt)}
+                      {DateUtils.getRelativeTime(new Date(qrCodeData.expiresAt))}
                     </span>
                   </div>
                 </div>
@@ -701,7 +695,7 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
                     </p>
                     <p className="text-sm text-slate-600 dark:text-slate-400">
                       {qrCodeData.isActive 
-                        ? `Expires ${DateUtils.getRelativeTime(qrCodeData.expiresAt)}`
+                        ? `Expires ${DateUtils.getRelativeTime(new Date(qrCodeData.expiresAt))}`
                         : 'Session expired'
                       }
                     </p>

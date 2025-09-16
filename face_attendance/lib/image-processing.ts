@@ -754,7 +754,7 @@ export class ImageValidator {
     }
 
     // File type validation
-    if (!allowedTypes.includes(file.type)) {
+    if (!allowedTypes.includes(file.type as "image/jpeg" | "image/png" | "image/webp")) {
       errors.push(`File type ${file.type} is not allowed`);
     }
 

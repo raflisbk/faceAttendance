@@ -31,7 +31,6 @@ import {
   FileText,
   Camera,
   Search,
-  Filter,
   MoreHorizontal,
   Download,
   MessageSquare
@@ -128,8 +127,8 @@ export const AdminUserApproval: React.FC<AdminUserApprovalProps> = ({ className 
         setPendingUsers(data.users || [])
         
         // Extract unique departments
-        const uniqueDepartments = [...new Set(data.users.map((u: PendingUser) => u.department))]
-        setDepartments(uniqueDepartments)
+        const uniqueDepartments = [...new Set(data.users.map((u: PendingUser) => u.department).filter(Boolean))]
+        setDepartments(uniqueDepartments as string[])
       } else {
         toast.error('Failed to load pending users')
       }
@@ -261,8 +260,8 @@ export const AdminUserApproval: React.FC<AdminUserApprovalProps> = ({ className 
 
     // Convert to CSV and download
     const csvContent = [
-      Object.keys(csvData[0]).join(','),
-      ...csvData.map(row => Object.values(row).join(','))
+      Object.keys(csvData[0] || {}).join(','),
+      ...csvData.map(row => Object.values(row || {}).join(','))
     ].join('\n')
 
     const blob = new Blob([csvContent], { type: 'text/csv' })
@@ -527,7 +526,7 @@ export const AdminUserApproval: React.FC<AdminUserApprovalProps> = ({ className 
                         <div>
                           <p className="text-slate-500 dark:text-slate-400 mb-1">Registration</p>
                           <p className="font-medium text-slate-800 dark:text-slate-200">
-                            {DateUtils.getRelativeTime(user.createdAt)}
+                            {DateUtils.getRelativeTime(new Date(user.createdAt))}
                           </p>
                         </div>
                         

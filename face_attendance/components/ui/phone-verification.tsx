@@ -1,8 +1,8 @@
-// components/ui/email-verification.tsx
+// components/ui/phone-verification.tsx
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Mail, CheckCircle, RefreshCw, AlertCircle, Clock } from 'lucide-react'
+import { Phone, CheckCircle, RefreshCw, AlertCircle, Clock } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,21 +10,21 @@ import { Label } from '@/components/ui/label'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { cn } from '@/lib/utils'
 
-interface EmailVerificationProps {
-  email: string
+interface PhoneVerificationProps {
+  phoneNumber: string
   isVerified?: boolean
   onVerificationComplete?: (code: string) => Promise<boolean>
   onResendCode?: () => Promise<void>
   className?: string
 }
 
-export function EmailVerification({
-  email,
+export function PhoneVerification({
+  phoneNumber,
   isVerified = false,
   onVerificationComplete,
   onResendCode,
   className
-}: EmailVerificationProps) {
+}: PhoneVerificationProps) {
   const [verificationCode, setVerificationCode] = useState('')
   const [isVerifying, setIsVerifying] = useState(false)
   const [isResending, setIsResending] = useState(false)
@@ -93,6 +93,15 @@ export function EmailVerification({
     }
   }
 
+  const formatPhoneNumber = (phone: string) => {
+    // Format phone number for display (e.g., +62 812-3456-7890)
+    if (phone.startsWith('+62')) {
+      const number = phone.slice(3)
+      return `+62 ${number.slice(0, 3)}-${number.slice(3, 7)}-${number.slice(7)}`
+    }
+    return phone
+  }
+
   if (isVerified || success) {
     return (
       <Card className={cn("w-full border-green-200 dark:border-green-800", className)}>
@@ -103,10 +112,10 @@ export function EmailVerification({
             </div>
             <div>
               <h3 className="font-medium text-green-700 dark:text-green-300">
-                Email Verified Successfully
+                Phone Number Verified Successfully
               </h3>
               <p className="text-sm text-green-600 dark:text-green-400">
-                {email} has been verified
+                {formatPhoneNumber(phoneNumber)} has been verified
               </p>
             </div>
           </div>
@@ -119,21 +128,21 @@ export function EmailVerification({
     <Card className={cn("w-full", className)}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Mail className="w-5 h-5" />
-          Email Verification
+          <Phone className="w-5 h-5" />
+          Phone Verification
         </CardTitle>
         <p className="text-sm text-slate-600 dark:text-slate-400">
-          We've sent a verification code to <strong>{email}</strong>
+          We've sent a verification code via SMS to <strong>{formatPhoneNumber(phoneNumber)}</strong>
         </p>
       </CardHeader>
 
       <CardContent className="space-y-6">
         {/* Verification Code Input */}
         <div className="space-y-2">
-          <Label htmlFor="verification-code">Enter 6-digit verification code</Label>
+          <Label htmlFor="sms-verification-code">Enter 6-digit SMS code</Label>
           <div className="flex gap-2">
             <Input
-              id="verification-code"
+              id="sms-verification-code"
               value={verificationCode}
               onChange={(e) => handleCodeChange(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -163,9 +172,9 @@ export function EmailVerification({
         {/* Resend Code */}
         <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
           <div>
-            <p className="text-sm font-medium">Didn't receive the code?</p>
+            <p className="text-sm font-medium">Didn't receive the SMS?</p>
             <p className="text-xs text-slate-600 dark:text-slate-400">
-              Check your spam folder or request a new code
+              Make sure your phone has signal and try again
             </p>
           </div>
 
@@ -185,7 +194,7 @@ export function EmailVerification({
             ) : (
               <div className="flex items-center gap-2">
                 <RefreshCw className="w-4 h-4" />
-                <span>Resend Code</span>
+                <span>Resend SMS</span>
               </div>
             )}
           </Button>
@@ -193,9 +202,9 @@ export function EmailVerification({
 
         {/* Instructions */}
         <div className="text-xs text-slate-500 dark:text-slate-400 space-y-1">
-          <p>• Enter the 6-digit code sent to your email</p>
-          <p>• The code expires in 10 minutes</p>
-          <p>• Make sure to check your spam/junk folder</p>
+          <p>• Enter the 6-digit code sent via SMS</p>
+          <p>• The code expires in 5 minutes</p>
+          <p>• Standard SMS rates may apply</p>
         </div>
       </CardContent>
     </Card>
