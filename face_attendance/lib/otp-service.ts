@@ -1,5 +1,5 @@
 // face_attendance/lib/otp-service.ts
-import { CryptoUtils } from './encryption'
+import { randomUUID } from 'crypto'
 import { EmailService } from './email-service'
 
 export interface OTPEntry {
@@ -93,15 +93,15 @@ export class OTPService {
   }> {
     // Check resend cooldown
     const cooldownKey = `${identifier}-${purpose}`
-    const cooldownUntil = this.resendCooldowns.get(cooldownKey)
-    
-    if (cooldownUntil && cooldownUntil > new Date()) {
+    const existingCooldown = this.resendCooldowns.get(cooldownKey)
+
+    if (existingCooldown && existingCooldown > new Date()) {
       return {
         success: false,
         otpId: '',
-        message: `Please wait before requesting another OTP. You can resend after ${this.formatTimeRemaining(cooldownUntil)}`,
+        message: `Please wait before requesting another OTP. You can resend after ${this.formatTimeRemaining(existingCooldown)}`,
         expiresAt: new Date(),
-        canResendAt: cooldownUntil
+        canResendAt: existingCooldown
       }
     }
 
@@ -110,13 +110,21 @@ export class OTPService {
 
     // Get configuration for this purpose
     const config = this.configs[purpose]
+    if (!config) {
+      return {
+        success: false,
+        otpId: '',
+        message: 'Invalid OTP purpose configuration',
+        expiresAt: new Date()
+      }
+    }
     
     // Generate OTP code
     const code = this.generateOTPCode(config.length, config.alphanumeric)
     
     // Create OTP entry
     const otpEntry: OTPEntry = {
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       identifier,
       code,
       type,
@@ -132,8 +140,8 @@ export class OTPService {
     this.otpStore.set(otpEntry.id, otpEntry)
 
     // Set resend cooldown
-    const cooldownUntil = new Date(Date.now() + config.resendCooldownMinutes * 60 * 1000)
-    this.resendCooldowns.set(cooldownKey, cooldownUntil)
+    const newCooldownUntil = new Date(Date.now() + config.resendCooldownMinutes * 60 * 1000)
+    this.resendCooldowns.set(cooldownKey, newCooldownUntil)
 
     // Send OTP
     try {
@@ -148,7 +156,7 @@ export class OTPService {
         otpId: otpEntry.id,
         message: `OTP sent successfully to ${this.maskIdentifier(identifier)}`,
         expiresAt: otpEntry.expiresAt,
-        canResendAt: cooldownUntil
+        canResendAt: newCooldownUntil
       }
     } catch (error) {
       // Remove OTP from store if sending failed
@@ -314,10 +322,23 @@ export class OTPService {
     const chars = alphanumeric ? numericChars + alphaChars : numericChars
     
     let code = ''
-    const randomBytes = crypto.getRandomValues(new Uint8Array(length))
+    const randomBytes = globalThis.crypto?.getRandomValues(new Uint8Array(length))
+
+    if (!randomBytes) {
+      // Fallback for Node.js environment
+      const { randomBytes: nodeRandomBytes } = require('crypto')
+      const bytes = nodeRandomBytes(length)
+      for (let i = 0; i < length; i++) {
+        code += chars[bytes[i] % chars.length]
+      }
+      return code
+    }
     
     for (let i = 0; i < length; i++) {
-      code += chars[randomBytes[i] % chars.length]
+      const byte = randomBytes[i]
+      if (byte !== undefined) {
+        code += chars[byte % chars.length]
+      }
     }
     
     return code
@@ -329,7 +350,7 @@ export class OTPService {
   private async sendEmailOTP(
     email: string,
     code: string,
-    purpose: string,
+    _purpose: string,
     userData?: { name?: string; userId?: string },
     expiryMinutes: number = 10
   ): Promise<void> {
@@ -351,8 +372,8 @@ export class OTPService {
   private async sendSMSOTP(
     phone: string,
     code: string,
-    purpose: string,
-    userData?: { name?: string; userId?: string },
+    _purpose: string,
+    _userData?: { name?: string; userId?: string },
     expiryMinutes: number = 10
   ): Promise<void> {
     // Mock SMS sending - replace with actual SMS service
@@ -389,8 +410,15 @@ export class OTPService {
   private maskIdentifier(identifier: string): string {
     if (identifier.includes('@')) {
       // Email
-      const [local, domain] = identifier.split('@')
-      const maskedLocal = local.length > 2 
+      const parts = identifier.split('@')
+      const local = parts[0]
+      const domain = parts[1]
+
+      if (!local || !domain) {
+        return '*'.repeat(identifier.length)
+      }
+
+      const maskedLocal = local.length > 2
         ? local[0] + '*'.repeat(local.length - 2) + local[local.length - 1]
         : '*'.repeat(local.length)
       return `${maskedLocal}@${domain}`
@@ -581,7 +609,7 @@ export class OTPService {
     
     return {
       ...result,
-      otpId: result.success ? otpId : undefined
+      ...(result.success && { otpId })
     }
   }
 }

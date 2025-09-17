@@ -79,6 +79,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
       return () => clearInterval(timer)
     }
+    return undefined
   }, [isLocked, lockTimeRemaining])
 
   const onSubmit = async (data: LoginFormData) => {

@@ -64,7 +64,7 @@ interface AttendanceCheckInProps {
 }
 
 export const AttendanceCheckIn: React.FC<AttendanceCheckInProps> = ({
-  user,
+  user: _user,
   onCheckInSuccess,
   onError,
   className

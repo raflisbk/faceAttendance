@@ -140,7 +140,7 @@ export const ComponentErrorFallback: React.FC<{
   error: Error
   resetError: () => void
   className?: string 
-}> = ({ error, resetError, className }) => (
+}> = ({ error: _error, resetError, className }) => (
   <div className={`p-4 border-2 border-dashed border-red-300 dark:border-red-700 rounded-lg bg-red-50 dark:bg-red-900/20 ${className}`}>
     <div className="flex items-center gap-3 mb-3">
       <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />

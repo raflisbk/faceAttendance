@@ -32,7 +32,7 @@ import {
   TrendingUp
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { FormatUtils, DateUtils } from '@/lib/utils'
+import { FormatUtils } from '@/lib/utils'
 
 interface Class {
   id: string
@@ -200,12 +200,13 @@ export const ClassList: React.FC<ClassListProps> = ({
     return 'text-red-600 dark:text-red-400'
   }
 
-  const getEnrollmentStatus = (current: number, capacity: number) => {
-    const percentage = (current / capacity) * 100
-    if (percentage >= 90) return { color: 'text-red-600 dark:text-red-400', status: 'Full' }
-    if (percentage >= 70) return { color: 'text-yellow-600 dark:text-yellow-400', status: 'High' }
-    return { color: 'text-green-600 dark:text-green-400', status: 'Available' }
-  }
+  // Utility function for future enrollment status feature
+  // const getEnrollmentStatus = (current: number, capacity: number) => {
+  //   const percentage = (current / capacity) * 100
+  //   if (percentage >= 90) return { color: 'text-red-600 dark:text-red-400', status: 'Full' }
+  //   if (percentage >= 70) return { color: 'text-yellow-600 dark:text-yellow-400', status: 'High' }
+  //   return { color: 'text-green-600 dark:text-green-400', status: 'Available' }
+  // }
 
   if (isLoading) {
     return <LoadingSpinner size="lg" text="Loading classes..." className="py-12" />

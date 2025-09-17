@@ -192,7 +192,7 @@ export class DataEncryption {
    */
   static encrypt(text: string): { encrypted: string; iv: string; tag: string } {
     const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv(this.algorithm, this.key, iv);
+    const cipher = crypto.createCipheriv(this.algorithm, this.key, iv) as crypto.CipherGCM;
 
     let encrypted = cipher.update(text, 'utf8', 'hex');
     encrypted += cipher.final('hex');
@@ -210,7 +210,7 @@ export class DataEncryption {
    * Decrypt sensitive data
    */
   static decrypt(encryptedData: { encrypted: string; iv: string; tag: string }): string {
-    const decipher = crypto.createDecipheriv(this.algorithm, this.key, Buffer.from(encryptedData.iv, 'hex'));
+    const decipher = crypto.createDecipheriv(this.algorithm, this.key, Buffer.from(encryptedData.iv, 'hex')) as crypto.DecipherGCM;
     decipher.setAuthTag(Buffer.from(encryptedData.tag, 'hex'));
 
     let decrypted = decipher.update(encryptedData.encrypted, 'hex', 'utf8');
@@ -488,19 +488,29 @@ export class BiometricEncryption {
     encryptedTemplate: string,
     iv: string
   ): Float32Array {
-    const [encrypted, authTag] = encryptedTemplate.split(':');
-    
+    const parts = encryptedTemplate.split(':');
+    if (parts.length !== 2) {
+      throw new Error('Invalid encrypted template format');
+    }
+
+    const encrypted = parts[0];
+    const authTag = parts[1];
+
+    if (!encrypted || !authTag) {
+      throw new Error('Missing encrypted data or auth tag');
+    }
+
     const decipher = crypto.createDecipheriv(
       'aes-256-gcm',
       this.biometricKey,
       Buffer.from(iv, 'hex')
     ) as crypto.DecipherGCM;
-    
+
     decipher.setAuthTag(Buffer.from(authTag, 'hex'));
-    
+
     let decrypted = decipher.update(encrypted, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
-    
+
     const templateArray = JSON.parse(decrypted);
     return new Float32Array(templateArray);
   }

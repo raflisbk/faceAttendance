@@ -36,7 +36,6 @@ import {
   FileText
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { USER_ROLES, DOCUMENT_TYPES } from '@/lib/constants'
 
 // Validation Schemas
 const basicInfoSchema = z.object({

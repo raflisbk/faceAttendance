@@ -23,7 +23,7 @@ class RedisClient {
         connectTimeout: 10000,
         commandTimeout: 5000,
         family: 4,
-      });
+      } as any);
 
       // Handle connection events
       RedisClient.instance.on('connect', () => {

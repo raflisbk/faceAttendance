@@ -132,13 +132,12 @@ export class ReportGenerator {
   async generateStudentReport(
     data: AttendanceReportData,
     format: ReportFormat = 'pdf',
-    config: ReportConfig = {}
+    config: Partial<ReportConfig> = {}
   ): Promise<Buffer | string> {
     const reportConfig: ReportConfig = {
       title: 'Student Attendance Report',
       subtitle: `${data.student.name} (${data.student.studentId})`,
       author: 'Face Attendance System',
-      dateRange: config.dateRange,
       ...config
     }
 
@@ -162,13 +161,12 @@ export class ReportGenerator {
   async generateClassReport(
     data: ClassReportData,
     format: ReportFormat = 'pdf',
-    config: ReportConfig = {}
+    config: Partial<ReportConfig> = {}
   ): Promise<Buffer | string> {
     const reportConfig: ReportConfig = {
       title: 'Class Attendance Report',
       subtitle: `${data.class.name} (${data.class.code})`,
       author: 'Face Attendance System',
-      dateRange: config.dateRange,
       ...config
     }
 
@@ -192,7 +190,7 @@ export class ReportGenerator {
   async generateSystemReport(
     data: SystemReportData,
     format: ReportFormat = 'pdf',
-    config: ReportConfig = {}
+    config: Partial<ReportConfig> = {}
   ): Promise<Buffer | string> {
     const reportConfig: ReportConfig = {
       title: 'System Analytics Report',
@@ -331,7 +329,7 @@ export class ReportGenerator {
                 <tr>
                   <td>${DateUtils.formatDate(new Date(record.date))}</td>
                   <td class="status-${record.status.toLowerCase()}">${record.status}</td>
-                  <td>${record.checkInTime ? DateUtils.formatTime(new Date(record.checkInTime)) : '-'}</td>
+                  <td>${record.checkInTime ? FormatUtils.formatTime(new Date(record.checkInTime)) : '-'}</td>
                   <td>${record.method}</td>
                   <td>${record.confidence ? `${(record.confidence * 100).toFixed(1)}%` : '-'}</td>
                 </tr>
@@ -341,7 +339,7 @@ export class ReportGenerator {
         </div>
 
         <div class="footer">
-          <p>Generated on ${DateUtils.formatDateTime(new Date())} by ${config.author}</p>
+          <p>Generated on ${FormatUtils.formatDateTime(new Date())} by ${config.author}</p>
           ${config.footer ? `<p>${config.footer}</p>` : ''}
         </div>
       </body>
@@ -557,7 +555,7 @@ export class ReportGenerator {
         </div>
 
         <div class="footer">
-          <p>Generated on ${DateUtils.formatDateTime(new Date())} by ${config.author}</p>
+          <p>Generated on ${FormatUtils.formatDateTime(new Date())} by ${config.author}</p>
           ${config.footer ? `<p>${config.footer}</p>` : ''}
         </div>
       </body>
@@ -792,7 +790,7 @@ export class ReportGenerator {
         </div>
 
         <div class="footer">
-          <p>Generated on ${DateUtils.formatDateTime(new Date())} by ${config.author}</p>
+          <p>Generated on ${FormatUtils.formatDateTime(new Date())} by ${config.author}</p>
           ${config.footer ? `<p>${config.footer}</p>` : ''}
         </div>
       </body>

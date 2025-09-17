@@ -21,18 +21,9 @@ import {
   Clock,
   Shield,
   ChevronDown,
-  Home,
-  Wifi,
-  Activity,
-  AlertTriangle,
-  CheckCircle,
-  Zap,
-  Moon,
-  Sun
+  Home
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { USER_ROLES } from '@/lib/constants'
-import { FormatUtils, DateUtils } from '@/lib/utils'
 
 interface User {
   id: string
@@ -47,21 +38,22 @@ interface User {
   lastLogin?: string
 }
 
-interface Notification {
-  id: string
-  title: string
-  message: string
-  type: 'info' | 'warning' | 'error' | 'success'
-  read: boolean
-  createdAt: string
-}
+// Future feature interfaces
+// interface Notification {
+//   id: string
+//   title: string
+//   message: string
+//   type: 'info' | 'warning' | 'error' | 'success'
+//   read: boolean
+//   createdAt: string
+// }
 
-interface SystemStatus {
-  online: boolean
-  faceRecognition: boolean
-  database: boolean
-  redis: boolean
-}
+// interface SystemStatus {
+//   online: boolean
+//   faceRecognition: boolean
+//   database: boolean
+//   redis: boolean
+// }
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -135,7 +127,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 }) => {
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [notifications, setNotifications] = useState(3)
+  const [notifications] = useState(3)
   const [currentTime, setCurrentTime] = useState(new Date())
 
   // Update current time every minute

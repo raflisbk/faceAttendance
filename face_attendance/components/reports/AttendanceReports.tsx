@@ -15,7 +15,6 @@ import {
   BarChart3,
   Download,
   Calendar,
-  Filter,
   Users,
   TrendingUp,
   TrendingDown,

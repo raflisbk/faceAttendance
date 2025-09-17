@@ -28,9 +28,7 @@ import {
   BookOpen,
   Save,
   X,
-  Clock,
   MapPin,
-  Users,
   Wifi,
   Calendar,
   User,
@@ -39,7 +37,6 @@ import {
   Trash2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { FormatUtils } from '@/lib/utils'
 
 const classSchema = z.object({
   name: z.string().min(3, 'Class name must be at least 3 characters'),
@@ -652,7 +649,7 @@ export const ClassForm: React.FC<ClassFormProps> = ({
                       placeholder="Add prerequisite class code (e.g., MATH101)"
                       value={newPrerequisite}
                       onChange={(e) => setNewPrerequisite(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addPrerequisite())}
+                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addPrerequisite())}
                       disabled={isSubmitting}
                     />
                     <Button

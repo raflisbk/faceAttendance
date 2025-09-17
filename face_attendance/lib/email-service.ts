@@ -1,4 +1,5 @@
 // face_attendance/lib/email-service.ts
+import { randomUUID } from 'crypto'
 
 export interface EmailTemplate {
   id: string
@@ -19,6 +20,7 @@ export interface EmailData {
   attachments?: EmailAttachment[]
   template?: string
   variables?: Record<string, any>
+  priority?: 'low' | 'normal' | 'high'
 }
 
 export interface EmailAttachment {
@@ -259,7 +261,7 @@ export class EmailService {
       text,
       template: templateId,
       variables,
-      attachments: options.attachments
+      ...(options.attachments && { attachments: options.attachments })
     }
 
     return this.queueEmail(emailData, options)
@@ -393,7 +395,7 @@ export class EmailService {
       scheduledAt?: Date
     } = {}
   ): string {
-    const id = crypto.randomUUID()
+    const id = randomUUID()
     const now = new Date()
 
     const queueItem: EmailQueue = {

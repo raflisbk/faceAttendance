@@ -1,4 +1,5 @@
 // face_attendance/lib/notification-service.ts
+import { randomUUID } from 'crypto'
 import { DateUtils } from './utils'
 
 export interface NotificationData {
@@ -131,15 +132,15 @@ export class NotificationService {
     } = {}
   ): Promise<NotificationData> {
     const notification: NotificationData = {
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       userId,
       type,
       title,
       message,
-      data: options.data,
+      ...(options.data && { data: options.data }),
       read: false,
-      createdAt: DateUtils.formatDateTime(new Date()),
-      expiresAt: options.expiresAt ? DateUtils.formatDateTime(options.expiresAt) : undefined,
+      createdAt: DateUtils.formatDate(new Date()),
+      ...(options.expiresAt && { expiresAt: DateUtils.formatDate(options.expiresAt) }),
       priority: options.priority || 'medium',
       category: this.getCategoryFromType(type)
     }
@@ -302,7 +303,7 @@ export class NotificationService {
     startTime: Date,
     duration: number
   ): Promise<void> {
-    const message = `System maintenance scheduled from ${DateUtils.formatDateTime(startTime)} for ${duration} hours`
+    const message = `System maintenance scheduled from ${DateUtils.formatDate(startTime)} for ${duration} hours`
 
     for (const userId of userIds) {
       await this.createNotification(
@@ -425,8 +426,15 @@ export class NotificationService {
     }
 
     userNotifications.forEach(notification => {
-      byCategory[notification.category]++
-      byPriority[notification.priority]++
+      if (notification.category) {
+        byCategory[notification.category]++
+      }
+      if (notification.priority && notification.priority in byPriority) {
+        const priority = notification.priority as keyof typeof byPriority
+        if (byPriority[priority] !== undefined) {
+          byPriority[priority]++
+        }
+      }
     })
 
     return {

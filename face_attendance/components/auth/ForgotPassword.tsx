@@ -62,6 +62,7 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({
 
       return () => clearInterval(timer)
     }
+    return undefined
   }, [resendCooldown])
 
   const onSubmit = async (data: ForgotPasswordFormData) => {

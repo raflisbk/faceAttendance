@@ -1,5 +1,5 @@
 // face_attendance/lib/file-upload-service.ts
-import { FILE_UPLOAD } from './constants'
+import { randomUUID } from 'crypto'
 
 export interface UploadConfig {
   maxFileSize: number
@@ -149,23 +149,23 @@ export class FileUploadService {
         fileUrl: '',
         mimeType: file.type,
         fileSize: file.size,
-        error: validation.error
+        error: validation.error || 'Validation failed'
       }
     }
 
     try {
       // Generate unique file ID and name
-      const fileId = crypto.randomUUID()
+      const fileId = randomUUID()
       const extension = this.getFileExtension(file.name)
       const fileName = `${fileId}${extension}`
       
       // Convert file to buffer
       const buffer = await file.arrayBuffer()
-      let processedBuffer = new Uint8Array(buffer)
+      let processedBuffer = new Uint8Array(buffer) as unknown as Buffer
 
       // Process image if needed
       if (this.isImage(file.type) && Object.keys(options).length > 0) {
-        processedBuffer = await this.processImage(processedBuffer, file.type, options)
+        processedBuffer = await this.processImage(processedBuffer, file.type, options) as Buffer
       }
 
       // Upload to configured destination
@@ -222,9 +222,9 @@ export class FileUploadService {
         fileUrl: uploadResult.fileUrl,
         mimeType: file.type,
         fileSize: file.size,
-        dimensions: uploadResult.dimensions,
+        ...(uploadResult.dimensions && { dimensions: uploadResult.dimensions }),
         configType,
-        userId,
+        ...(userId && { userId }),
         uploadedAt: new Date()
       })
 
@@ -358,19 +358,19 @@ export class FileUploadService {
    * Process image (resize, compress, watermark)
    */
   private async processImage(
-    buffer: Uint8Array,
-    mimeType: string,
+    buffer: Buffer,
+    _mimeType: string,
     options: FileProcessingOptions
-  ): Promise<Uint8Array> {
+  ): Promise<Buffer> {
     // Mock image processing - in production, use Sharp, Canvas API, or similar
     console.log('Processing image with options:', options)
-    
+
     // Return original buffer for now
     // In production, implement actual image processing:
     // - Use Sharp for server-side processing
     // - Use Canvas API for client-side processing
     // - Implement resize, compression, watermarking
-    
+
     return buffer
   }
 
@@ -378,20 +378,20 @@ export class FileUploadService {
    * Generate thumbnail
    */
   private async generateThumbnail(
-    buffer: Uint8Array,
-    mimeType: string,
-    config: UploadConfig,
+    _buffer: Buffer,
+    _mimeType: string,
+    _config: UploadConfig,
     fileId: string
   ): Promise<{ url: string; path: string; dimensions: { width: number; height: number } }> {
     // Mock thumbnail generation
     const thumbnailFileName = `thumb_${fileId}.jpg`
     const thumbnailPath = `/uploads/thumbnails/${thumbnailFileName}`
-    
+
     // In production, implement actual thumbnail generation
     // - Resize to standard thumbnail size (e.g., 150x150)
     // - Save to storage
     // - Return actual URLs and paths
-    
+
     return {
       url: `${process.env.NEXT_PUBLIC_BASE_URL}${thumbnailPath}`,
       path: thumbnailPath,
@@ -403,7 +403,7 @@ export class FileUploadService {
    * Upload to Cloudinary
    */
   private async uploadToCloudinary(
-    buffer: Uint8Array,
+    buffer: Buffer,
     fileName: string,
     file: File,
     config: UploadConfig,
@@ -428,7 +428,7 @@ export class FileUploadService {
       fileUrl,
       mimeType: file.type,
       fileSize: file.size,
-      dimensions
+      ...(dimensions && { dimensions })
     }
   }
 
@@ -436,7 +436,7 @@ export class FileUploadService {
    * Upload to AWS S3
    */
   private async uploadToS3(
-    buffer: Uint8Array,
+    buffer: Buffer,
     fileName: string,
     file: File,
     config: UploadConfig,
@@ -460,7 +460,7 @@ export class FileUploadService {
       fileUrl,
       mimeType: file.type,
       fileSize: file.size,
-      dimensions
+      ...(dimensions && { dimensions })
     }
   }
 
@@ -468,7 +468,7 @@ export class FileUploadService {
    * Upload to local storage
    */
   private async uploadToLocal(
-    buffer: Uint8Array,
+    buffer: Buffer,
     fileName: string,
     file: File,
     config: UploadConfig,
@@ -496,7 +496,7 @@ export class FileUploadService {
       fileUrl,
       mimeType: file.type,
       fileSize: file.size,
-      dimensions
+      ...(dimensions && { dimensions })
     }
   }
 
@@ -532,8 +532,8 @@ export class FileUploadService {
    * Get image dimensions
    */
   private async getImageDimensions(
-    buffer: Uint8Array,
-    mimeType: string
+    _buffer: Buffer,
+    _mimeType: string
   ): Promise<{ width: number; height: number }> {
     return new Promise((resolve) => {
       // Mock dimensions - in production, use image processing library
@@ -651,7 +651,7 @@ export class FileUploadService {
   /**
    * Get file statistics
    */
-  async getFileStatistics(userId?: string): Promise<{
+  async getFileStatistics(_userId?: string): Promise<{
     totalFiles: number
     totalSize: number
     byType: Record<string, { count: number; size: number }>
@@ -704,7 +704,7 @@ export class FileUploadService {
    */
   async generateSignedUploadUrl(
     configType: string,
-    fileName: string,
+    _fileName: string,
     userId?: string
   ): Promise<{
     uploadUrl: string
@@ -716,7 +716,7 @@ export class FileUploadService {
       throw new Error(`Invalid upload configuration: ${configType}`)
     }
     
-    const fileId = crypto.randomUUID()
+    const fileId = randomUUID()
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
     
     // Generate signed URL based on destination
@@ -738,7 +738,7 @@ export class FileUploadService {
       fileId,
       uploadUrl,
       configType,
-      userId,
+      ...(userId && { userId }),
       expiresAt
     })
     
@@ -754,7 +754,7 @@ export class FileUploadService {
    */
   private async generateCloudinarySignedUrl(
     fileId: string,
-    config: UploadConfig
+    _config: UploadConfig
   ): Promise<string> {
     // Mock Cloudinary signed URL generation
     // In production, use Cloudinary SDK to generate actual signed URLs
@@ -903,6 +903,15 @@ export class FileUploadService {
     
     for (let i = 0; i < images.length; i++) {
       const image = images[i]
+      if (!image) {
+        return {
+          success: false,
+          results: [],
+          qualityScores: [],
+          averageQuality: 0,
+          error: `Invalid image at index ${i}`
+        }
+      }
       
       // Upload face image
       const uploadResult = await this.uploadFile(

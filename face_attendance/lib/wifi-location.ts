@@ -86,8 +86,8 @@ export class WiFiLocationService {
 
     return {
       available: !!matchingNetwork,
-      signalStrength: matchingNetwork?.signalStrength,
-      network: matchingNetwork
+      ...(matchingNetwork?.signalStrength !== undefined && { signalStrength: matchingNetwork.signalStrength }),
+      ...(matchingNetwork && { network: matchingNetwork })
     }
   }
 

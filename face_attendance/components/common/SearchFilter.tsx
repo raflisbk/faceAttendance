@@ -21,7 +21,6 @@ import {
   ChevronUp
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { DateUtils } from '@/lib/utils'
 
 interface FilterOption {
   value: string
@@ -126,7 +125,7 @@ export const SearchFilter: React.FC<SearchFilterProps> = ({
 
   // Count active filters
   useEffect(() => {
-    const count = Object.entries(filterValues).filter(([key, value]) => {
+    const count = Object.entries(filterValues).filter(([_key, value]) => {
       if (Array.isArray(value)) return value.length > 0
       if (typeof value === 'boolean') return value
       if (typeof value === 'string') return value !== ''

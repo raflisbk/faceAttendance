@@ -166,7 +166,7 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
     }
   }
 
-  const generateQRCodeImage = async (token: string, sessionId: string) => {
+  const generateQRCodeImage = async (token: string, _sessionId: string) => {
     try {
       // Generate QR code using a library or service
       // For demo purposes, we'll use a simple placeholder
@@ -262,11 +262,20 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
       // Fallback for older browsers
       const textArea = document.createElement('textarea')
       textArea.value = link
+      textArea.style.position = 'fixed'
+      textArea.style.left = '-999999px'
+      textArea.style.top = '-999999px'
       document.body.appendChild(textArea)
+      textArea.focus()
       textArea.select()
-      document.execCommand('copy')
+      try {
+        document.execCommand('copy')
+        toast.success('QR Code link copied to clipboard')
+      } catch (fallbackError) {
+        console.error('Copy fallback failed:', fallbackError)
+        toast.error('Failed to copy link to clipboard')
+      }
       document.body.removeChild(textArea)
-      toast.success('QR Code link copied to clipboard')
     }
   }
 
@@ -278,29 +287,29 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
 
-    printWindow.document.write(`
+    const htmlContent = `
       <html>
         <head>
           <title>QR Code - ${selectedClassData?.name}</title>
           <style>
-            body { 
-              font-family: Arial, sans-serif; 
-              text-align: center; 
-              padding: 20px; 
+            body {
+              font-family: Arial, sans-serif;
+              text-align: center;
+              padding: 20px;
             }
-            .qr-container { 
-              border: 2px solid #000; 
-              padding: 20px; 
-              display: inline-block; 
+            .qr-container {
+              border: 2px solid #000;
+              padding: 20px;
+              display: inline-block;
               margin: 20px;
             }
-            .qr-image { 
-              display: block; 
-              margin: 0 auto 20px auto; 
+            .qr-image {
+              display: block;
+              margin: 0 auto 20px auto;
             }
-            .info { 
-              font-size: 14px; 
-              line-height: 1.5; 
+            .info {
+              font-size: 14px;
+              line-height: 1.5;
             }
             @media print {
               body { margin: 0; }
@@ -322,7 +331,11 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
           </div>
         </body>
       </html>
-    `)
+    `
+
+    printWindow.document.open()
+    printWindow.document.write(htmlContent)
+    printWindow.document.close()
     
     printWindow.document.close()
     printWindow.print()

@@ -275,8 +275,7 @@ export class CacheService {
    */
   getStats(): CacheStats {
     const entries = Array.from(this.cache.values())
-    const now = Date.now()
-    
+
     let memoryUsage = 0
     entries.forEach(entry => {
       memoryUsage += JSON.stringify(entry).length * 2 // Rough estimate
