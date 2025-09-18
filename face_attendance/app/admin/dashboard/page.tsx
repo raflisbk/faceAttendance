@@ -8,31 +8,27 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useToastHelpers } from '@/components/ui/toast'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { 
+import {
   Users,
   BookOpen,
-  Calendar,
   TrendingUp,
   TrendingDown,
   Clock,
   CheckCircle,
-  XCircle,
   AlertTriangle,
   BarChart3,
-  PieChart,
   Activity,
   MapPin,
   Wifi,
   UserCheck,
-  UserX,
   Settings,
   Download,
   RefreshCw
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { ApiClient } from '@/lib/api-client'
+import { apiClient } from '@/lib/api-client'
 import { useAuthStore } from '@/store/auth-store'
-import { FormatUtils, DateUtils } from '@/lib/utils'
+import { DateUtils } from '@/lib/utils'
 import { AdminStatsCards } from '@/components/admin/AdminStatsCards'
 import { PendingApprovals } from '@/components/admin/PendingApprovals'
 import { RecentActivity } from '@/components/admin/RecentActivity'
@@ -95,7 +91,7 @@ export default function AdminDashboard() {
   const [error, setError] = useState<string>('')
   const [activeTab, setActiveTab] = useState('overview')
   
-  const { user } = useAuthStore()
+  const {} = useAuthStore()
   const toast = useToastHelpers()
 
   useEffect(() => {
@@ -116,16 +112,16 @@ export default function AdminDashboard() {
       setError('')
       
       const [statsResponse, activityResponse] = await Promise.all([
-        ApiClient.get('/api/admin/dashboard/stats'),
-        ApiClient.get('/api/admin/dashboard/activity')
+        apiClient.get('/api/admin/dashboard/stats'),
+        apiClient.get('/api/admin/dashboard/activity')
       ])
 
-      setStats(statsResponse.data)
-      setRecentActivity(activityResponse.data)
+      setStats(statsResponse.data as DashboardStats)
+      setRecentActivity(activityResponse.data as RecentActivityItem[])
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || 'Failed to load dashboard data'
       setError(errorMessage)
-      toast.showError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setIsLoading(false)
       setIsRefreshing(false)
@@ -138,22 +134,20 @@ export default function AdminDashboard() {
 
   const handleExportReport = async () => {
     try {
-      const response = await ApiClient.get('/api/admin/reports/export', {
-        responseType: 'blob'
-      })
+      const response = await apiClient.get('/api/admin/reports/export')
       
-      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const url = window.URL.createObjectURL(new Blob([response.data as BlobPart]))
       const link = document.createElement('a')
       link.href = url
-      link.setAttribute('download', `admin_report_${DateUtils.formatDate(new Date(), 'yyyy-MM-dd')}.xlsx`)
+      link.setAttribute('download', `admin_report_${DateUtils.formatDate(new Date(), { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-')}.xlsx`)
       document.body.appendChild(link)
       link.click()
       link.remove()
       window.URL.revokeObjectURL(url)
       
-      toast.showSuccess('Report exported successfully')
+      toast.success('Report exported successfully')
     } catch (error) {
-      toast.showError('Failed to export report')
+      toast.error('Failed to export report')
     }
   }
 

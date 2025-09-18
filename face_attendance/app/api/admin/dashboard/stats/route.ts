@@ -2,19 +2,177 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authMiddleware } from '@/lib/auth-middleware'
 import { prisma } from '@/lib/prisma'
+import { EmailService } from '@/lib/email-service'
 import { redis } from '@/lib/redis'
 
 export async function GET(request: NextRequest) {
   try {
     const user = await authMiddleware(request)
     if (!user || user.role !== 'ADMIN') {
-      return NextResponse.json({
+      return NextResponse.json(
+        { error: 'Unauthorized. Admin access required.' },
+        { status: 401 }
+      )
+    }
+
+    // Get current date ranges
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+
+    const weekAgo = new Date(today)
+    weekAgo.setDate(weekAgo.getDate() - 7)
+
+    const monthAgo = new Date(today)
+    monthAgo.setMonth(monthAgo.getMonth() - 1)
+
+    // Parallel queries for better performance
+    const [
+      // User statistics
+      totalUsers,
+      activeUsers,
+      pendingUsers,
+      suspendedUsers,
+      adminCount,
+      lecturerCount,
+      studentCount,
+
+      // Class statistics
+      totalClasses,
+      activeClasses,
+
+      // Attendance statistics
+      todayAttendances,
+      weekAttendances,
+      monthAttendances,
+
+      // System statistics
+      totalLocations,
+      totalFaceProfiles
+    ] = await Promise.all([
+      // Users
+      prisma.user.count(),
+      prisma.user.count({ where: { status: 'ACTIVE' } }),
+      prisma.user.count({ where: { status: 'PENDING' } }),
+      prisma.user.count({ where: { status: 'SUSPENDED' } }),
+      prisma.user.count({ where: { role: 'ADMIN' } }),
+      prisma.user.count({ where: { role: 'LECTURER' } }),
+      prisma.user.count({ where: { role: 'STUDENT' } }),
+
+      // Classes
+      prisma.class.count(),
+      prisma.class.count({ where: { isActive: true } }),
+
+      // Attendances
+      prisma.attendance.findMany({
+        where: {
+          timestamp: {
+            gte: today,
+            lt: tomorrow
+          }
+        },
+        select: {
+          id: true,
+          isValid: true
+        }
+      }),
+      prisma.attendance.findMany({
+        where: {
+          timestamp: {
+            gte: weekAgo
+          }
+        },
+        select: {
+          id: true,
+          isValid: true
+        }
+      }),
+      prisma.attendance.findMany({
+        where: {
+          timestamp: {
+            gte: monthAgo
+          }
+        },
+        select: {
+          id: true,
+          isValid: true
+        }
+      }),
+
+      // System
+      prisma.location.count(),
+      prisma.faceProfile.count()
+    ])
+
+    // Calculate attendance statistics
+    const todayTotal = todayAttendances.length
+    const todayPresent = todayAttendances.filter((a: any) => a.isValid).length
+    const todayAbsent = todayTotal - todayPresent
+    const todayLate = 0 // This would need additional logic based on your business rules
+
+    // Calculate weekly average
+    const weekTotal = weekAttendances.length
+    const weekPresent = weekAttendances.filter((a: any) => a.isValid).length
+    const weeklyAverage = weekTotal > 0 ? (weekPresent / weekTotal) * 100 : 0
+
+    // Calculate monthly trend (simplified)
+    const monthTotal = monthAttendances.length
+    const monthPresent = monthAttendances.filter((a: any) => a.isValid).length
+    const monthlyAverage = monthTotal > 0 ? (monthPresent / monthTotal) * 100 : 0
+    const monthlyTrend = weeklyAverage - monthlyAverage
+
+    // Calculate average enrollment per class
+    const enrollmentData = await prisma.class.findMany({
+      include: {
+        enrollments: true
+      }
+    })
+    const averageEnrollment = enrollmentData.length > 0
+      ? enrollmentData.reduce((sum: number, cls: any) => sum + cls.enrollments.length, 0) / enrollmentData.length
+      : 0
+
+    const stats = {
+      users: {
+        total: totalUsers,
+        active: activeUsers,
+        pending: pendingUsers,
+        suspended: suspendedUsers,
+        byRole: {
+          admins: adminCount,
+          lecturers: lecturerCount,
+          students: studentCount
+        }
+      },
+      classes: {
+        total: totalClasses,
+        active: activeClasses,
+        inactive: totalClasses - activeClasses,
+        averageEnrollment: Math.round(averageEnrollment)
+      },
+      attendance: {
+        todayTotal,
+        todayPresent,
+        todayAbsent,
+        todayLate,
+        weeklyAverage,
+        monthlyTrend
+      },
+      system: {
+        totalLocations,
+        activeWifiNetworks: totalLocations, // Simplified: assume each location has WiFi
+        faceProfiles: totalFaceProfiles,
+        qrSessions: 0 // Would need QR session tracking
+      }
+    }
+
+    return NextResponse.json({
       success: true,
-      data: pendingUsers
+      data: stats
     })
 
   } catch (error) {
-    console.error('Get pending users error:', error)
+    console.error('Admin dashboard stats error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -52,11 +210,11 @@ export async function POST(request: NextRequest) {
     const usersToProcess = await prisma.user.findMany({
       where: {
         id: { in: userIds },
-        status: 'PENDING_APPROVAL'
+        status: 'PENDING'
       },
       include: {
         faceProfile: true,
-        document: true
+        documentVerifications: true
       }
     })
 
@@ -79,27 +237,28 @@ export async function POST(request: NextRequest) {
               data: {
                 status: 'ACTIVE',
                 approvedAt: new Date(),
-                approvedBy: user.id
+                approvedById: user.id
               }
             }),
             // Approve face profile if exists
-            ...(userToProcess.faceProfile ? [
-              prisma.faceProfile.update({
-                where: { id: userToProcess.faceProfile.id },
+            // Update document verifications if exist
+            ...(userToProcess.documentVerifications?.length ? userToProcess.documentVerifications.map((doc: any) =>
+              prisma.documentVerification.update({
+                where: { id: doc.id },
                 data: { status: 'APPROVED' }
               })
-            ] : []),
-            // Approve document if exists
-            ...(userToProcess.document ? [
-              prisma.document.update({
-                where: { id: userToProcess.document.id },
-                data: { status: 'VERIFIED' }
-              })
-            ] : [])
+            ) : [])
           ])
 
           // Send approval email
-          await sendApprovalEmail(userToProcess.email, userToProcess.firstName)
+          await EmailService.getInstance().sendAccountApproved(
+            userToProcess.email,
+            userToProcess.name,
+            userToProcess.email,
+            userToProcess.role,
+            userToProcess.studentId || userToProcess.staffId || userToProcess.id,
+            `${process.env.NEXTAUTH_URL}/login`
+          )
 
           // Clear user cache
           await redis.del(`user:${userToProcess.id}`)
@@ -114,15 +273,17 @@ export async function POST(request: NextRequest) {
           await prisma.user.update({
             where: { id: userToProcess.id },
             data: {
-              status: 'REJECTED',
-              rejectedAt: new Date(),
-              rejectedBy: user.id,
-              rejectionReason: reason
+              status: 'REJECTED'
             }
           })
 
           // Send rejection email
-          await sendRejectionEmail(userToProcess.email, userToProcess.firstName, reason)
+          await EmailService.getInstance().sendAccountRejected(
+            userToProcess.email,
+            userToProcess.name,
+            reason || 'Your account application has been rejected',
+            process.env.SUPPORT_EMAIL || 'support@faceattendance.com'
+          )
 
           results.push({
             userId: userToProcess.id,

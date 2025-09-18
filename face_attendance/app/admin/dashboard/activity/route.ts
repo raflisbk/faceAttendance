@@ -2,6 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authMiddleware } from '@/lib/auth-middleware'
 import { prisma } from '@/lib/prisma'
 
+interface Activity {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  user: {
+    name: string;
+    role: string;
+  };
+  timestamp: string;
+  status: string;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const user = await authMiddleware(request)
@@ -31,8 +44,7 @@ export async function GET(request: NextRequest) {
         },
         select: {
           id: true,
-          firstName: true,
-          lastName: true,
+          name: true,
           role: true,
           status: true,
           createdAt: true
@@ -40,19 +52,18 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: 'desc' },
         take: 10
       }),
-      
+
       // Recent attendance records
       prisma.attendance.findMany({
         where: {
-          date: {
+          timestamp: {
             gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
           }
         },
         include: {
-          student: {
+          user: {
             select: {
-              firstName: true,
-              lastName: true,
+              name: true,
               role: true
             }
           },
@@ -63,10 +74,10 @@ export async function GET(request: NextRequest) {
             }
           }
         },
-        orderBy: { date: 'desc' },
+        orderBy: { timestamp: 'desc' },
         take: 10
       }),
-      
+
       // Recent class creations
       prisma.class.findMany({
         where: {
@@ -77,80 +88,78 @@ export async function GET(request: NextRequest) {
         include: {
           lecturer: {
             select: {
-              firstName: true,
-              lastName: true
+              name: true
             }
           }
         },
         orderBy: { createdAt: 'desc' },
         take: 5
       }),
-      
+
       // Recent face enrollments
       prisma.faceProfile.findMany({
         where: {
-          enrolledAt: {
+          createdAt: {
             gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
           }
         },
         include: {
           user: {
             select: {
-              firstName: true,
-              lastName: true,
+              name: true,
               role: true
             }
           }
         },
-        orderBy: { enrolledAt: 'desc' },
+        orderBy: { createdAt: 'desc' },
         take: 10
       })
     ])
 
     // Combine and format activities
-    const activities = []
+    const activities: Activity[] = []
 
     // Add user registrations
-    recentRegistrations.forEach(user => {
+    recentRegistrations.forEach((user: any) => {
       activities.push({
         id: `user_${user.id}`,
         type: 'USER_REGISTRATION',
         title: 'New User Registration',
-        description: `${user.firstName} ${user.lastName} registered as ${user.role.toLowerCase()}`,
+        description: `${user.name || 'Unknown User'} registered as ${user.role.toLowerCase()}`,
         user: {
-          name: `${user.firstName} ${user.lastName}`,
+          name: user.name || 'Unknown User',
           role: user.role
         },
         timestamp: user.createdAt.toISOString(),
-        status: user.status === 'PENDING_APPROVAL' ? 'WARNING' : 'SUCCESS'
+        status: user.status === 'PENDING' ? 'WARNING' : user.status === 'ACTIVE' ? 'SUCCESS' : 'ERROR'
       })
     })
 
     // Add attendance records
-    recentAttendances.forEach(attendance => {
+    recentAttendances.forEach((attendance: any) => {
       activities.push({
         id: `attendance_${attendance.id}`,
         type: 'ATTENDANCE_CHECKED',
         title: 'Attendance Recorded',
-        description: `${attendance.student.firstName} ${attendance.student.lastName} checked into ${attendance.class.name}`,
+        description: `${attendance.user.name || 'Unknown User'} checked into ${attendance.class.name}`,
         user: {
-          name: `${attendance.student.firstName} ${attendance.student.lastName}`,
-          role: attendance.student.role
+          name: attendance.user.name || 'Unknown User',
+          role: attendance.user.role
         },
-        timestamp: attendance.date.toISOString(),
-        status: attendance.status === 'PRESENT' ? 'SUCCESS' : attendance.status === 'LATE' ? 'WARNING' : 'ERROR'
+        timestamp: attendance.timestamp.toISOString(),
+        status: attendance.isValid ? 'SUCCESS' : 'WARNING'
       })
     })
 
     // Add class creations
-    recentClasses.forEach(classItem => {
+    recentClasses.forEach((classItem: any) => {
       activities.push({
         id: `class_${classItem.id}`,
         type: 'CLASS_CREATED',
         title: 'New Class Created',
-        description: `${classItem.name} (${classItem.code}) created by ${classItem.lecturer.firstName} ${classItem.lecturer.lastName}`,
+        description: `${classItem.name} (${classItem.code}) created by ${classItem.lecturer.name || 'Unknown Lecturer'}`,
         user: {
-          name: `${classItem.lecturer.firstName} ${classItem.lecturer.lastName}`,
+          name: classItem.lecturer.name || 'Unknown Lecturer',
           role: 'LECTURER'
         },
         timestamp: classItem.createdAt.toISOString(),
@@ -159,18 +168,18 @@ export async function GET(request: NextRequest) {
     })
 
     // Add face enrollments
-    recentFaceEnrollments.forEach(profile => {
+    recentFaceEnrollments.forEach((profile: any) => {
       activities.push({
         id: `face_${profile.id}`,
         type: 'FACE_ENROLLED',
         title: 'Face Profile Enrolled',
-        description: `${profile.user.firstName} ${profile.user.lastName} completed face enrollment`,
+        description: `${profile.user.name || 'Unknown User'} completed face enrollment`,
         user: {
-          name: `${profile.user.firstName} ${profile.user.lastName}`,
+          name: profile.user.name || 'Unknown User',
           role: profile.user.role
         },
-        timestamp: profile.enrolledAt?.toISOString() || new Date().toISOString(),
-        status: profile.status === 'APPROVED' ? 'SUCCESS' : 'WARNING'
+        timestamp: profile.createdAt.toISOString(),
+        status: 'SUCCESS'
       })
     })
 
