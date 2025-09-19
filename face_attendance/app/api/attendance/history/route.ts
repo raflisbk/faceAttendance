@@ -67,15 +67,14 @@ export async function GET(request: NextRequest) {
               code: true,
               lecturer: {
                 select: {
-                  firstName: true,
-                  lastName: true
+                  name: true
                 }
               }
             }
           }
         },
         orderBy: {
-          date: 'desc'
+          timestamp: 'desc'
         },
         skip,
         take: limit

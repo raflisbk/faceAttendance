@@ -11,7 +11,10 @@
       "Bash(npm run build:*)",
       "Bash(npm run:*)",
       "Bash(/dev/null)",
-      "Bash(echo \"Build status: $?\")"
+      "Bash(echo \"Build status: $?\")",
+      "Bash(npm audit:*)",
+      "Bash(curl:*)",
+      "WebFetch(domain:localhost)"
     ],
     "deny": [],
     "ask": []

@@ -413,5 +413,12 @@ export async function sendAttendanceNotification(
   return emailService.sendAttendanceNotification(email, studentName, className, status, date)
 }
 
+// Main exports
 export { EmailService, MockEmailProvider, ResendEmailProvider }
-export type { EmailOptions, EmailTemplate, EmailProvider }
+
+// Type exports
+export type {
+  EmailOptions as EmailOptionsType,
+  EmailTemplate as EmailTemplateType,
+  EmailProvider as EmailProviderType
+}

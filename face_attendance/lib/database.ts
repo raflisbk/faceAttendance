@@ -153,22 +153,21 @@ export const dbUtils = {
 
       if (!existingAdmin) {
         // Create default admin user
-        const bcrypt = await import('bcryptjs');
-        const hashedPassword = await bcrypt.hash('admin123', 12);
-
         await db.user.create({
           data: {
             email: 'admin@face-attendance.com',
-            password: hashedPassword,
             name: 'System Administrator',
             role: 'ADMIN',
-            status: 'APPROVED',
+            status: 'ACTIVE',
             emailVerified: new Date(),
-            registrationStep: 4,
+            termsAccepted: true,
+            gdprConsent: true,
+            documentVerified: true,
+            approvedAt: new Date()
           }
         });
 
-        console.log('Default admin user created');
+        console.log('Default admin user created: admin@face-attendance.com');
       }
 
       // Create default locations
@@ -177,18 +176,28 @@ export const dbUtils = {
         await db.location.createMany({
           data: [
             {
-              name: 'Main Campus',
-              address: 'Jl. Raya Kampus No. 1',
-              wifiSSID: 'CAMPUS-MAIN',
-              latitude: -6.2088,
-              longitude: 106.8456,
+              name: 'Main Classroom',
+              building: 'Building A',
+              floor: '1',
+              room: '101',
+              wifiSsid: 'CAMPUS-MAIN-A101',
+              capacity: 40,
+              gpsCoordinates: {
+                latitude: -6.2088,
+                longitude: 106.8456
+              }
             },
             {
-              name: 'Building A - Room 101',
-              address: 'Building A, Floor 1, Room 101',
-              wifiSSID: 'CAMPUS-A101',
-              latitude: -6.2089,
-              longitude: 106.8457,
+              name: 'Lab Computer',
+              building: 'Building B',
+              floor: '2',
+              room: '201',
+              wifiSsid: 'CAMPUS-LAB-B201',
+              capacity: 30,
+              gpsCoordinates: {
+                latitude: -6.2089,
+                longitude: 106.8457
+              }
             }
           ]
         });

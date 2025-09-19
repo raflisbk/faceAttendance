@@ -55,7 +55,7 @@ export async function validateWifiLocation(
         return {
           isValid: false,
           confidence: confidence * 0.5, // Reduce confidence if location is suspicious
-          distance: locationValidation.distance,
+          distance: locationValidation.distance || 0,
           message: `Location validation failed: ${locationValidation.message}`
         }
       }

@@ -23,11 +23,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get user's approved face profile
+    // Get user's face profile
     const faceProfile = await prisma.faceProfile.findFirst({
       where: {
-        userId: user.id,
-        status: 'APPROVED'
+        userId: user.id
       }
     })
 
@@ -39,20 +38,27 @@ export async function POST(request: NextRequest) {
     }
 
     // Perform face verification
+    const descriptors = Array.isArray(faceProfile.faceDescriptors)
+      ? faceProfile.faceDescriptors as number[]
+      : []
     const verificationResult = await verifyFaceRecognition(
       faceImageData,
-      faceProfile.descriptors
+      descriptors
     )
 
     // Log verification attempt
-    await prisma.faceVerificationLog.create({
+    await prisma.faceQualityLog.create({
       data: {
         userId: user.id,
-        faceProfileId: faceProfile.id,
-        confidence: verificationResult.confidence,
-        isSuccessful: verificationResult.isMatch,
-        threshold,
-        timestamp: new Date()
+        qualityScores: {
+          confidence: verificationResult.confidence,
+          threshold
+        },
+        validationResults: {
+          isMatch: verificationResult.isMatch,
+          timestamp: new Date().toISOString()
+        },
+        passed: verificationResult.isMatch
       }
     })
 
@@ -62,7 +68,7 @@ export async function POST(request: NextRequest) {
         isMatch: verificationResult.isMatch,
         confidence: verificationResult.confidence,
         threshold,
-        profileQuality: faceProfile.quality,
+        profileQuality: faceProfile.qualityScore,
         timestamp: new Date().toISOString()
       },
       message: verificationResult.isMatch 

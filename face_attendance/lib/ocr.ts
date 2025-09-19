@@ -38,7 +38,7 @@ export interface DocumentData {
  * Mock OCR service for development
  */
 class MockOCRService {
-  async processImage(imageBuffer: Buffer | File): Promise<OCRResult> {
+  async processImage(_imageBuffer: Buffer | File): Promise<OCRResult> {
     // Simulate processing delay
     await new Promise(resolve => setTimeout(resolve, 2000))
 
@@ -77,7 +77,7 @@ class MockOCRService {
       Graduation: 2024`
     ]
 
-    return templates[Math.floor(Math.random() * templates.length)]
+    return templates[Math.floor(Math.random() * templates.length)] || ''
   }
 
   private generateMockWords(text: string): OCRResult['words'] {
@@ -127,23 +127,23 @@ class OCRService {
     }
   }
 
-  async processImage(imageBuffer: Buffer | File): Promise<OCRResult> {
+  async processImage(_imageBuffer: Buffer | File): Promise<OCRResult> {
     // If no API key, fall back to mock service
     if (!this.apiKey) {
       const mockService = new MockOCRService()
-      return mockService.processImage(imageBuffer)
+      return mockService.processImage(_imageBuffer)
     }
 
     try {
       // Convert image to base64
       let base64Image: string
 
-      if (imageBuffer instanceof File) {
-        const arrayBuffer = await imageBuffer.arrayBuffer()
+      if (_imageBuffer instanceof File) {
+        const arrayBuffer = await _imageBuffer.arrayBuffer()
         const buffer = Buffer.from(arrayBuffer)
         base64Image = buffer.toString('base64')
       } else {
-        base64Image = imageBuffer.toString('base64')
+        base64Image = _imageBuffer.toString('base64')
       }
 
       // Prepare request for Google Vision API
@@ -187,7 +187,7 @@ class OCRService {
       console.error('OCR processing error:', error)
       // Fall back to mock service on error
       const mockService = new MockOCRService()
-      return mockService.processImage(imageBuffer)
+      return mockService.processImage(_imageBuffer)
     }
   }
 
@@ -323,7 +323,7 @@ export class DocumentProcessor {
 
   private extractPattern(text: string, pattern: RegExp): string | null {
     const match = text.match(pattern)
-    return match ? match[1].trim() : null
+    return match?.[1]?.trim() || null
   }
 }
 
@@ -422,5 +422,11 @@ export async function extractTextFromDocument(
   }
 }
 
+// Main exports
 export { OCRService, MockOCRService }
-export type { OCRResult, DocumentData }
+
+// Type exports
+export type {
+  OCRResult as OCRResultType,
+  DocumentData as DocumentDataType
+}

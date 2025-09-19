@@ -458,7 +458,7 @@ export async function verifyFaceRecognition(
       await new Promise((resolve) => { img.onload = resolve })
       URL.revokeObjectURL(url)
     } else {
-      const blob = new Blob([inputImage])
+      const blob = new Blob([new Uint8Array(inputImage)])
       const url = URL.createObjectURL(blob)
       img = new Image()
       img.src = url
@@ -503,7 +503,7 @@ export async function extractFaceDescriptors(imageBuffer: Buffer | File): Promis
       await new Promise((resolve) => { img.onload = resolve })
       URL.revokeObjectURL(url)
     } else {
-      const blob = new Blob([imageBuffer])
+      const blob = new Blob([new Uint8Array(imageBuffer)])
       const url = URL.createObjectURL(blob)
       img = new Image()
       img.src = url
@@ -535,7 +535,7 @@ export async function validateFaceQuality(imageBuffer: Buffer | File): Promise<{
       await new Promise((resolve) => { img.onload = resolve })
       URL.revokeObjectURL(url)
     } else {
-      const blob = new Blob([imageBuffer])
+      const blob = new Blob([new Uint8Array(imageBuffer)])
       const url = URL.createObjectURL(blob)
       img = new Image()
       img.src = url
@@ -590,7 +590,7 @@ export async function validateFaceQuality(imageBuffer: Buffer | File): Promise<{
 
 export async function enrollFaceProfile(
   imageBuffer: Buffer | File,
-  userId: string
+  _userId: string
 ): Promise<{ success: boolean; descriptors?: number[]; error?: string }> {
   try {
     const qualityCheck = await validateFaceQuality(imageBuffer)
@@ -674,7 +674,7 @@ export async function performLivenessCheck(
       await new Promise((resolve) => { img.onload = resolve })
       URL.revokeObjectURL(url)
     } else {
-      const blob = new Blob([imageBuffer])
+      const blob = new Blob([new Uint8Array(imageBuffer)])
       const url = URL.createObjectURL(blob)
       img = new Image()
       img.src = url

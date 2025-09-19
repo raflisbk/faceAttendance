@@ -25,7 +25,7 @@ export async function generateExcelReport(reportData: ExcelReportData): Promise<
   const workbook = XLSX.utils.book_new()
 
   // Generate timestamp for the report
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+  const _timestamp = new Date().toISOString().replace(/[:.]/g, '-')
   const dateRange = reportData.dateRange.startDate && reportData.dateRange.endDate
     ? `${reportData.dateRange.startDate.toISOString().split('T')[0]} to ${reportData.dateRange.endDate.toISOString().split('T')[0]}`
     : 'All Time'
@@ -194,6 +194,7 @@ export async function generateExcelReport(reportData: ExcelReportData): Promise<
   const sheetNames = workbook.SheetNames
   sheetNames.forEach(sheetName => {
     const sheet = workbook.Sheets[sheetName]
+    if (!sheet) return
 
     // Auto-fit columns
     const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1:A1')
@@ -203,7 +204,7 @@ export async function generateExcelReport(reportData: ExcelReportData): Promise<
       let maxWidth = 10
       for (let row = range.s.r; row <= range.e.r; row++) {
         const cellAddress = XLSX.utils.encode_cell({ r: row, c: col })
-        const cell = sheet[cellAddress]
+        const cell = sheet?.[cellAddress]
         if (cell && cell.v) {
           const cellLength = cell.v.toString().length
           maxWidth = Math.max(maxWidth, Math.min(cellLength, 50))
@@ -212,17 +213,21 @@ export async function generateExcelReport(reportData: ExcelReportData): Promise<
       colWidths.push({ wch: maxWidth })
     }
 
-    sheet['!cols'] = colWidths
+    if (sheet) {
+      sheet['!cols'] = colWidths
+    }
 
     // Style header row (if it's not the summary sheet)
     if (sheetName !== 'Summary') {
       for (let col = range.s.c; col <= range.e.c; col++) {
         const headerCell = XLSX.utils.encode_cell({ r: 0, c: col })
-        if (!sheet[headerCell]) sheet[headerCell] = { t: 's', v: '' }
-        sheet[headerCell].s = {
-          font: { bold: true },
-          fill: { fgColor: { rgb: 'E6E6E6' } },
-          alignment: { horizontal: 'center' }
+        if (sheet && !sheet[headerCell]) sheet[headerCell] = { t: 's', v: '' }
+        if (sheet?.[headerCell]) {
+          sheet[headerCell].s = {
+            font: { bold: true },
+            fill: { fgColor: { rgb: 'E6E6E6' } },
+            alignment: { horizontal: 'center' }
+          }
         }
       }
     }

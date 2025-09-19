@@ -1,5 +1,5 @@
 // lib/otp.ts
-import crypto from 'crypto'
+// import crypto from 'crypto'
 import { prisma } from './prisma'
 
 export interface OTPConfig {
@@ -273,7 +273,7 @@ export class OTPService {
 
       return {
         hasActive: !!activeOTP,
-        attemptsUsed: activeOTP?.attempts,
+        attemptsUsed: activeOTP?.attempts || 0,
         maxAttempts: this.MAX_ATTEMPTS,
         expiresAt: activeOTP?.expiresAt,
         canRequestNew,
