@@ -69,7 +69,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Upload document to Cloudinary
-    const documentUrl = await uploadToCloudinary(documentFile, 'documents')
+    const documentUploadResult = await uploadToCloudinary(documentFile, {
+      folder: 'documents',
+      resource_type: 'auto'
+    })
+    const documentUrl = documentUploadResult.secure_url
 
     // Extract text from document using OCR
     let extractedText = ''

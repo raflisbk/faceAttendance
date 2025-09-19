@@ -76,10 +76,10 @@ export async function GET(request: NextRequest) {
     ])
 
     // Calculate statistics
-    const totalClasses = enrollments.filter(e => e.class.status === 'ACTIVE').length
-    const presentCount = attendanceRecords.filter(a => a.status === 'PRESENT').length
-    const lateCount = attendanceRecords.filter(a => a.status === 'LATE').length
-    const absentCount = attendanceRecords.filter(a => a.status === 'ABSENT').length
+    const totalClasses = enrollments.filter((e: any) => e.class.status === 'ACTIVE').length
+    const presentCount = attendanceRecords.filter((a: any) => a.status === 'PRESENT').length
+    const lateCount = attendanceRecords.filter((a: any) => a.status === 'LATE').length
+    const absentCount = attendanceRecords.filter((a: any) => a.status === 'ABSENT').length
     const totalAttendanceRecords = attendanceRecords.length
     
     const attendanceRate = totalAttendanceRecords > 0 

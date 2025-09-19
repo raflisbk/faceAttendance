@@ -901,4 +901,6 @@ export class FileUploader {
   }
 }
 
+// Export with both naming conventions for compatibility
+export { apiClient as ApiClient };
 export default apiClient;

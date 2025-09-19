@@ -25,33 +25,25 @@ import { ApiClient } from '@/lib/api-client'
 import { useAuthStore } from '@/store/auth-store'
 import { FaceCapture } from '@/components/face/FaceCapture'
 import { QRScanner } from '@/components/attendance/QRScanner'
-import { FormatUtils, DateUtils } from '@/lib/utils'
+import { format } from 'date-fns'
+import type {
+  AvailableClass,
+  CheckInData,
+  LocationCoordinates
+} from '@/types/api'
+import type { ApiResponse } from '@/lib/api-client'
 
-interface AvailableClass {
-  id: string
-  name: string
-  code: string
-  lecturer: {
-    name: string
+// Helper function to convert data URL to File
+function dataURLtoFile(dataurl: string, filename: string): File {
+  const arr = dataurl.split(',')
+  const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg'
+  const bstr = atob(arr[1])
+  let n = bstr.length
+  const u8arr = new Uint8Array(n)
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n)
   }
-  location: {
-    name: string
-    building: string
-    wifiSSID: string
-  }
-  schedule: {
-    startTime: string
-    endTime: string
-  }
-  canCheckIn: boolean
-  timeUntilStart: number // minutes
-  timeUntilEnd: number // minutes
-  isInSession: boolean
-  hasCheckedIn: boolean
-  attendance?: {
-    status: string
-    checkInTime: string
-  }
+  return new File([u8arr], filename, { type: mime })
 }
 
 export default function CheckInPage() {
@@ -62,31 +54,43 @@ export default function CheckInPage() {
   const [isCheckingIn, setIsCheckingIn] = useState(false)
   const [error, setError] = useState<string>('')
   const [wifiSSID, setWifiSSID] = useState<string>('')
-  const [coordinates, setCoordinates] = useState<{latitude: number, longitude: number} | null>(null)
+  const [coordinates, setCoordinates] = useState<LocationCoordinates | null>(null)
   
   const { user } = useAuthStore()
   const toast = useToastHelpers()
 
   useEffect(() => {
-    loadAvailableClasses()
-    detectWiFi()
-    getLocation()
-    
+    const initializeData = async () => {
+      await loadAvailableClasses()
+      detectWiFi()
+      getLocation()
+    }
+
+    initializeData()
+
     // Refresh every minute
     const interval = setInterval(loadAvailableClasses, 60000)
     return () => clearInterval(interval)
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadAvailableClasses = async () => {
     try {
       setIsLoading(true)
       setError('')
-      
-      const response = await ApiClient.get('/api/student/available-classes')
-      setAvailableClasses(response.data || [])
+
+      const response: ApiResponse<AvailableClass[]> = await ApiClient.get('/student/today-classes')
+
+      if (response.success && response.data) {
+        setAvailableClasses(response.data)
+      } else {
+        const errorMsg = response.error?.message || 'Failed to load available classes'
+        setError(errorMsg)
+        setAvailableClasses([])
+      }
     } catch (error: any) {
-      const errorMessage = error.response?.data?.error || 'Failed to load available classes'
+      const errorMessage = error?.message || 'Failed to load available classes'
       setError(errorMessage)
+      setAvailableClasses([])
     } finally {
       setIsLoading(false)
     }
@@ -110,16 +114,24 @@ export default function CheckInPage() {
           (position) => {
             setCoordinates({
               latitude: position.coords.latitude,
-              longitude: position.coords.longitude
+              longitude: position.coords.longitude,
+              accuracy: position.coords.accuracy
             })
           },
           (error) => {
             console.warn('Location access denied:', error)
+            setCoordinates(null)
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 300000 // 5 minutes
           }
         )
       }
     } catch (error) {
       console.warn('Geolocation failed:', error)
+      setCoordinates(null)
     }
   }
 
@@ -128,29 +140,47 @@ export default function CheckInPage() {
     setCheckInMethod(method)
   }
 
-  const handleCheckInComplete = async (data: any) => {
+  const handleCheckInComplete = async (data: { faceImage?: File; qrData?: string; [key: string]: any }) => {
     try {
       setIsCheckingIn(true)
-      
-      const checkInData = {
-        classId: selectedClass,
-        method: checkInMethod,
-        wifiSSID,
-        coordinates,
-        ...data
+
+      if (!selectedClass || !checkInMethod) {
+        toast.error('Invalid check-in request')
+        return
       }
-      
-      const response = await ApiClient.post('/api/attendance/check-in', checkInData)
-      
+
+      // Find the selected class to get its location ID
+      const selectedClassData = availableClasses.find(cls => cls.id === selectedClass)
+      if (!selectedClassData) {
+        toast.error('Class not found')
+        return
+      }
+
+      const checkInData: CheckInData = {
+        classId: selectedClass,
+        locationId: selectedClassData.location.id,
+        method: checkInMethod === 'face' ? 'FACE_RECOGNITION' : 'QR_CODE',
+        ...(wifiSSID && { wifiSSID }),
+        ...(coordinates && { coordinates }),
+        ...(data.faceImage && { faceImage: data.faceImage })
+      }
+
+      const response: ApiResponse<any> = await ApiClient.post('/attendance/check-in', checkInData)
+
       if (response.success) {
-        toast.showSuccess(response.message)
+        toast.success('Check-in successful')
         setSelectedClass(null)
         setCheckInMethod(null)
         await loadAvailableClasses() // Refresh the list
+      } else {
+        const errorMsg = response.error?.message || 'Check-in failed'
+        toast.error(errorMsg)
+        console.error('Check-in failed:', response)
       }
     } catch (error: any) {
-      const errorMessage = error.response?.data?.error || 'Check-in failed'
-      toast.showError(errorMessage)
+      const errorMessage = error?.message || error?.toString() || 'Check-in failed due to network error'
+      toast.error(errorMessage)
+      console.error('Check-in error:', error)
     } finally {
       setIsCheckingIn(false)
     }
@@ -162,10 +192,19 @@ export default function CheckInPage() {
   }
 
   const getClassStatus = (classItem: AvailableClass) => {
-    if (classItem.hasCheckedIn) return 'checked-in'
-    if (!classItem.canCheckIn && classItem.isInSession) return 'missed'
+    // Check if user has already checked in
+    if (classItem.hasCheckedIn || classItem.attendance) return 'checked-in'
+
+    // Check if class is currently available for check-in
     if (classItem.canCheckIn) return 'available'
-    if (classItem.timeUntilStart > 0) return 'upcoming'
+
+    // Check if class is in session but can't check in (missed window)
+    if (classItem.isInSession && !classItem.canCheckIn) return 'missed'
+
+    // Check if class is upcoming
+    if (classItem.timeUntilStart && classItem.timeUntilStart > 0) return 'upcoming'
+
+    // Default to ended
     return 'ended'
   }
 
@@ -201,10 +240,38 @@ export default function CheckInPage() {
     }
   }
 
+  // Redirect if not authenticated or not a student
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="text-center">
+          <AlertTriangle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-white mb-2">Authentication Required</h2>
+          <p className="text-slate-400">Please log in to access the check-in page.</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (user.role !== 'STUDENT') {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="text-center">
+          <Users className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-white mb-2">Student Access Only</h2>
+          <p className="text-slate-400">Only students can access the attendance check-in system.</p>
+        </div>
+      </div>
+    )
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <LoadingSpinner className="w-8 h-8 text-white" />
+        <div className="text-center">
+          <LoadingSpinner className="w-8 h-8 text-white mx-auto mb-4" />
+          <p className="text-slate-400">Loading available classes...</p>
+        </div>
       </div>
     )
   }
@@ -221,7 +288,7 @@ export default function CheckInPage() {
           <div>
             <h1 className="text-3xl font-bold text-white mb-2">Attendance Check-In</h1>
             <p className="text-slate-400">
-              {DateUtils.formatDate(new Date(), 'EEEE, MMMM do, yyyy')}
+              {format(new Date(), 'EEEE, MMMM d, yyyy')}
             </p>
           </div>
           
@@ -313,11 +380,11 @@ export default function CheckInPage() {
                         
                         <div className="text-right">
                           <p className="text-sm text-slate-400">
-                            {FormatUtils.formatTime(classItem.schedule.startTime)} - {FormatUtils.formatTime(classItem.schedule.endTime)}
+                            {format(new Date(classItem.schedule.startTime), 'HH:mm')} - {format(new Date(classItem.schedule.endTime), 'HH:mm')}
                           </p>
-                          {classItem.hasCheckedIn && classItem.attendance && (
+                          {(classItem.hasCheckedIn || classItem.attendance) && classItem.attendance?.checkInTime && (
                             <p className="text-xs text-green-400 mt-1">
-                              Checked in at {FormatUtils.formatTime(classItem.attendance.checkInTime)}
+                              Checked in at {format(new Date(classItem.attendance.checkInTime), 'HH:mm')}
                             </p>
                           )}
                         </div>
@@ -329,7 +396,10 @@ export default function CheckInPage() {
                         {/* Location Info */}
                         <div className="flex items-center space-x-2 text-sm text-slate-300">
                           <MapPin className="w-4 h-4 text-slate-400" />
-                          <span>{classItem.location.name}, {classItem.location.building}</span>
+                          <span>
+                            {classItem.location.name}
+                            {classItem.location.building && `, ${classItem.location.building}`}
+                          </span>
                         </div>
                         
                         <div className="flex items-center space-x-2 text-sm text-slate-300">
@@ -342,13 +412,13 @@ export default function CheckInPage() {
 
                         {/* Time Information */}
                         <div className="p-3 bg-slate-800/30 rounded-lg">
-                          {status === 'upcoming' && (
+                          {status === 'upcoming' && classItem.timeUntilStart && (
                             <p className="text-sm text-yellow-400">
                               Starts in {Math.abs(classItem.timeUntilStart)} minutes
                             </p>
                           )}
-                          
-                          {status === 'available' && (
+
+                          {status === 'available' && classItem.timeUntilEnd && (
                             <p className="text-sm text-blue-400">
                               Check-in window closes in {Math.abs(classItem.timeUntilEnd)} minutes
                             </p>
@@ -373,7 +443,7 @@ export default function CheckInPage() {
                         </div>
 
                         {/* Check-in Buttons */}
-                        {status === 'available' && !classItem.hasCheckedIn && (
+                        {status === 'available' && !classItem.hasCheckedIn && !classItem.attendance && (
                           <div className="flex space-x-3">
                             <Button
                               onClick={() => handleCheckIn(classItem.id, 'face')}
@@ -425,17 +495,23 @@ export default function CheckInPage() {
               <CardContent>
                 {checkInMethod === 'face' ? (
                   <FaceCapture
-                    mode="attendance"
-                    onCapture={handleCheckInComplete}
-                    onCancel={handleCheckInCancel}
-                    isLoading={isCheckingIn}
-                    requireWifiValidation={true}
+                    onCapture={(imageData: string) => {
+                      const file = dataURLtoFile(imageData, 'face-capture.jpg')
+                      handleCheckInComplete({ faceImage: file })
+                    }}
+                    onError={(error: string) => {
+                      toast.error(error)
+                    }}
                   />
                 ) : (
                   <QRScanner
-                    onScan={handleCheckInComplete}
-                    onCancel={handleCheckInCancel}
-                    isLoading={isCheckingIn}
+                    onScan={(qrData: string) => {
+                      handleCheckInComplete({ qrData })
+                    }}
+                    onClose={handleCheckInCancel}
+                    onError={(error: string) => {
+                      toast.error(error)
+                    }}
                   />
                 )}
               </CardContent>

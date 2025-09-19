@@ -1,6 +1,5 @@
 // app/api/auth/register/status/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { authMiddleware } from '@/lib/auth-middleware'
 import { redis } from '@/lib/redis'
 
 export async function GET(request: NextRequest) {

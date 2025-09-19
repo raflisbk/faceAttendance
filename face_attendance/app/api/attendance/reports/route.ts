@@ -68,11 +68,11 @@ export async function GET(request: NextRequest) {
           _count: { status: true }
         })
 
-        const totalSessions = summaryStats.reduce((sum, stat) => sum + stat._count.status, 0)
-        const presentCount = summaryStats.find(s => s.status === 'PRESENT')?._count.status || 0
-        const lateCount = summaryStats.find(s => s.status === 'LATE')?._count.status || 0
-        const absentCount = summaryStats.find(s => s.status === 'ABSENT')?._count.status || 0
-        const excusedCount = summaryStats.find(s => s.status === 'EXCUSED')?._count.status || 0
+        const totalSessions = summaryStats.reduce((sum: number, stat: any) => sum + stat._count.status, 0)
+        const presentCount = summaryStats.find((s: any) => s.status === 'PRESENT')?._count.status || 0
+        const lateCount = summaryStats.find((s: any) => s.status === 'LATE')?._count.status || 0
+        const absentCount = summaryStats.find((s: any) => s.status === 'ABSENT')?._count.status || 0
+        const excusedCount = summaryStats.find((s: any) => s.status === 'EXCUSED')?._count.status || 0
         
         const attendanceRate = totalSessions > 0 ? ((presentCount + lateCount) / totalSessions) * 100 : 0
 
@@ -144,7 +144,7 @@ export async function GET(request: NextRequest) {
         })
 
         // Process trend data into daily summaries
-        const dailyTrends = trendData.reduce((acc: any, item) => {
+        const dailyTrends = trendData.reduce((acc: any, item: any) => {
           const dateKey = item.date.toISOString().split('T')[0]
           if (!acc[dateKey]) {
             acc[dateKey] = { date: dateKey, present: 0, late: 0, absent: 0, total: 0 }
@@ -185,9 +185,9 @@ export async function GET(request: NextRequest) {
           }
         })
 
-        const performanceData = classPerformance.map(cls => {
+        const performanceData = classPerformance.map((cls: any) => {
           const totalSessions = cls.attendances.length
-          const presentSessions = cls.attendances.filter(a => a.status === 'PRESENT' || a.status === 'LATE').length
+          const presentSessions = cls.attendances.filter((a: any) => a.status === 'PRESENT' || a.status === 'LATE').length
           const rate = totalSessions > 0 ? (presentSessions / totalSessions) * 100 : 0
 
           return {

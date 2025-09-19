@@ -4,6 +4,7 @@ import { authMiddleware } from '@/lib/auth-middleware'
 import { updateUserSchema } from '@/lib/validations'
 import { prisma } from '@/lib/prisma'
 import { redis } from '@/lib/redis'
+import { z } from 'zod'
 
 export async function GET(
   request: NextRequest,
@@ -99,10 +100,10 @@ export async function GET(
     })
 
     const stats = {
-      totalAttendance: attendanceStats.reduce((sum, stat) => sum + stat._count.status, 0),
-      present: attendanceStats.find(s => s.status === 'PRESENT')?._count.status || 0,
-      absent: attendanceStats.find(s => s.status === 'ABSENT')?._count.status || 0,
-      late: attendanceStats.find(s => s.status === 'LATE')?._count.status || 0,
+      totalAttendance: attendanceStats.reduce((sum: number, stat: any) => sum + stat._count.status, 0),
+      present: attendanceStats.find((s: any) => s.status === 'PRESENT')?._count.status || 0,
+      absent: attendanceStats.find((s: any) => s.status === 'ABSENT')?._count.status || 0,
+      late: attendanceStats.find((s: any) => s.status === 'LATE')?._count.status || 0,
     }
 
     const response = {

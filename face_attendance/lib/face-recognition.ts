@@ -421,11 +421,11 @@ export class FaceRecognitionService {
   ): Promise<{ passed: boolean; completedInstructions: string[] }> {
     // Simplified liveness check - in production, implement proper liveness detection
     const completedInstructions: string[] = []
-    
+
     for (const instruction of instructions) {
       // Simulate liveness check
       await new Promise(resolve => setTimeout(resolve, 2000))
-      
+
       const result = await this.detectFaceFromVideo(video)
       if (result) {
         completedInstructions.push(instruction)
@@ -435,6 +435,305 @@ export class FaceRecognitionService {
     return {
       passed: completedInstructions.length === instructions.length,
       completedInstructions
+    }
+  }
+}
+
+// Export convenience functions for easier use
+const faceRecognitionService = FaceRecognitionService.getInstance()
+
+export async function verifyFaceRecognition(
+  inputImage: File | Buffer,
+  storedDescriptors: number[]
+): Promise<{ isMatch: boolean; confidence: number; distance: number }> {
+  try {
+    await faceRecognitionService.initialize()
+
+    // Convert File/Buffer to image
+    let img: HTMLImageElement
+    if (inputImage instanceof File) {
+      const url = URL.createObjectURL(inputImage)
+      img = new Image()
+      img.src = url
+      await new Promise((resolve) => { img.onload = resolve })
+      URL.revokeObjectURL(url)
+    } else {
+      const blob = new Blob([inputImage])
+      const url = URL.createObjectURL(blob)
+      img = new Image()
+      img.src = url
+      await new Promise((resolve) => { img.onload = resolve })
+      URL.revokeObjectURL(url)
+    }
+
+    const result = await faceRecognitionService.detectFaceFromImage(img)
+    if (!result) {
+      return { isMatch: false, confidence: 0, distance: 1 }
+    }
+
+    // Convert stored descriptors back to Float32Array
+    const storedDescriptor = new Float32Array(storedDescriptors)
+    const distance = faceapi.euclideanDistance(result.descriptor, storedDescriptor)
+
+    // Consider it a match if distance is less than 0.6
+    const threshold = 0.6
+    const isMatch = distance < threshold
+    const confidence = Math.max(0, (threshold - distance) / threshold)
+
+    return {
+      isMatch,
+      confidence: Math.round(confidence * 100) / 100,
+      distance: Math.round(distance * 100) / 100
+    }
+  } catch (error) {
+    console.error('Error verifying face recognition:', error)
+    return { isMatch: false, confidence: 0, distance: 1 }
+  }
+}
+
+export async function extractFaceDescriptors(imageBuffer: Buffer | File): Promise<Float32Array | null> {
+  try {
+    await faceRecognitionService.initialize()
+
+    let img: HTMLImageElement
+    if (imageBuffer instanceof File) {
+      const url = URL.createObjectURL(imageBuffer)
+      img = new Image()
+      img.src = url
+      await new Promise((resolve) => { img.onload = resolve })
+      URL.revokeObjectURL(url)
+    } else {
+      const blob = new Blob([imageBuffer])
+      const url = URL.createObjectURL(blob)
+      img = new Image()
+      img.src = url
+      await new Promise((resolve) => { img.onload = resolve })
+      URL.revokeObjectURL(url)
+    }
+
+    const result = await faceRecognitionService.detectFaceFromImage(img)
+    return result ? result.descriptor : null
+  } catch (error) {
+    console.error('Error extracting face descriptors:', error)
+    return null
+  }
+}
+
+export async function validateFaceQuality(imageBuffer: Buffer | File): Promise<{
+  isValid: boolean
+  score: number
+  issues: string[]
+}> {
+  try {
+    await faceRecognitionService.initialize()
+
+    let img: HTMLImageElement
+    if (imageBuffer instanceof File) {
+      const url = URL.createObjectURL(imageBuffer)
+      img = new Image()
+      img.src = url
+      await new Promise((resolve) => { img.onload = resolve })
+      URL.revokeObjectURL(url)
+    } else {
+      const blob = new Blob([imageBuffer])
+      const url = URL.createObjectURL(blob)
+      img = new Image()
+      img.src = url
+      await new Promise((resolve) => { img.onload = resolve })
+      URL.revokeObjectURL(url)
+    }
+
+    const result = await faceRecognitionService.detectFaceFromImage(img)
+    const issues: string[] = []
+
+    if (!result) {
+      issues.push('No face detected in image')
+      return { isValid: false, score: 0, issues }
+    }
+
+    const quality = result.quality
+    let score = Math.round(quality.score * 100)
+
+    if (quality.score < 0.7) {
+      issues.push('Overall face quality is too low')
+    }
+
+    if (quality.brightness < 0.3) {
+      issues.push('Image is too dark')
+    } else if (quality.brightness > 0.8) {
+      issues.push('Image is too bright')
+    }
+
+    if (quality.sharpness < 0.5) {
+      issues.push('Image is too blurry')
+    }
+
+    const poseAngle = Math.max(Math.abs(quality.pose.yaw), Math.abs(quality.pose.pitch), Math.abs(quality.pose.roll))
+    if (poseAngle > 15) {
+      issues.push('Face should be looking straight at the camera')
+    }
+
+    return {
+      isValid: issues.length === 0 && quality.score >= 0.7,
+      score,
+      issues
+    }
+  } catch (error) {
+    console.error('Error validating face quality:', error)
+    return {
+      isValid: false,
+      score: 0,
+      issues: ['Error processing image']
+    }
+  }
+}
+
+export async function enrollFaceProfile(
+  imageBuffer: Buffer | File,
+  userId: string
+): Promise<{ success: boolean; descriptors?: number[]; error?: string }> {
+  try {
+    const qualityCheck = await validateFaceQuality(imageBuffer)
+
+    if (!qualityCheck.isValid) {
+      return {
+        success: false,
+        error: `Face quality issues: ${qualityCheck.issues.join(', ')}`
+      }
+    }
+
+    const descriptors = await extractFaceDescriptors(imageBuffer)
+
+    if (!descriptors) {
+      return {
+        success: false,
+        error: 'Failed to extract face features'
+      }
+    }
+
+    return {
+      success: true,
+      descriptors: Array.from(descriptors)
+    }
+  } catch (error) {
+    console.error('Error enrolling face profile:', error)
+    return {
+      success: false,
+      error: 'Failed to process face enrollment'
+    }
+  }
+}
+
+export async function calculateFaceProfileQuality(descriptors: number[]): Promise<number> {
+  try {
+    const mean = descriptors.reduce((sum, val) => sum + val, 0) / descriptors.length
+    const variance = descriptors.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / descriptors.length
+    const qualityScore = Math.min(100, Math.max(0, variance * 1000))
+    return Math.round(qualityScore)
+  } catch (error) {
+    console.error('Error calculating face profile quality:', error)
+    return 0
+  }
+}
+
+export async function compareFaceDescriptors(
+  descriptors1: number[],
+  descriptors2: number[]
+): Promise<{ similarity: number; distance: number }> {
+  try {
+    if (descriptors1.length !== descriptors2.length) {
+      throw new Error('Descriptor arrays must have the same length')
+    }
+
+    const desc1 = new Float32Array(descriptors1)
+    const desc2 = new Float32Array(descriptors2)
+    const distance = faceapi.euclideanDistance(desc1, desc2)
+    const similarity = Math.max(0, 1 - distance)
+
+    return {
+      similarity: Math.round(similarity * 100) / 100,
+      distance: Math.round(distance * 100) / 100
+    }
+  } catch (error) {
+    console.error('Error comparing face descriptors:', error)
+    return { similarity: 0, distance: 1 }
+  }
+}
+
+export async function performLivenessCheck(
+  imageBuffer: Buffer | File
+): Promise<{ isLive: boolean; confidence: number; checks: string[] }> {
+  try {
+    await faceRecognitionService.initialize()
+
+    let img: HTMLImageElement
+    if (imageBuffer instanceof File) {
+      const url = URL.createObjectURL(imageBuffer)
+      img = new Image()
+      img.src = url
+      await new Promise((resolve) => { img.onload = resolve })
+      URL.revokeObjectURL(url)
+    } else {
+      const blob = new Blob([imageBuffer])
+      const url = URL.createObjectURL(blob)
+      img = new Image()
+      img.src = url
+      await new Promise((resolve) => { img.onload = resolve })
+      URL.revokeObjectURL(url)
+    }
+
+    const result = await faceRecognitionService.detectFaceFromImage(img)
+    const checks: string[] = []
+    let confidence = 0
+
+    if (!result) {
+      return { isLive: false, confidence: 0, checks: ['No face detected'] }
+    }
+
+    // Check detection confidence
+    if (result.confidence > 0.8) {
+      checks.push('High detection confidence')
+      confidence += 40
+    } else {
+      checks.push('Low detection confidence')
+      confidence += 10
+    }
+
+    // Check quality metrics
+    if (result.quality.score > 0.7) {
+      checks.push('Good image quality')
+      confidence += 30
+    } else {
+      checks.push('Poor image quality')
+      confidence += 5
+    }
+
+    // Check pose - natural slight variations are good
+    const poseAngle = Math.max(Math.abs(result.quality.pose.yaw), Math.abs(result.quality.pose.pitch))
+    if (poseAngle < 5) {
+      checks.push('Very rigid pose - may be a photo')
+      confidence += 10
+    } else if (poseAngle < 15) {
+      checks.push('Natural pose variation')
+      confidence += 30
+    } else {
+      checks.push('Excessive head movement')
+      confidence += 15
+    }
+
+    const isLive = confidence >= 70
+
+    return {
+      isLive,
+      confidence: Math.round(confidence),
+      checks
+    }
+  } catch (error) {
+    console.error('Error performing liveness check:', error)
+    return {
+      isLive: false,
+      confidence: 0,
+      checks: ['Error processing liveness check']
     }
   }
 }

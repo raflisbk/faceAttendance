@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authMiddleware } from '@/lib/auth-middleware'
 import { prisma } from '@/lib/prisma'
-import { performAdvancedDocumentVerification } from '@/lib/document-verification'
+import { verifyDocument } from '@/lib/document-verification'
 
 export async function POST(request: NextRequest) {
   try {
@@ -71,11 +71,22 @@ export async function POST(request: NextRequest) {
     // Perform advanced verification checks if approving
     if (action === 'approve') {
       try {
-        const advancedVerification = await performAdvancedDocumentVerification(document)
-        updateData.verificationScore = advancedVerification.score
-        updateData.verificationDetails = advancedVerification.details
-        
-        if (advancedVerification.score < 70) {
+        // Perform document verification using the existing document URL
+        const documentUrl = document.url
+        const expectedData = {
+          name: `${document.user.firstName} ${document.user.lastName}`,
+          email: document.user.email
+        }
+
+        const advancedVerification = await verifyDocument(
+          documentUrl,
+          document.type,
+          expectedData
+        )
+        updateData.verificationScore = advancedVerification.confidence
+        updateData.verificationDetails = JSON.stringify(advancedVerification.verificationChecks)
+
+        if (advancedVerification.confidence < 70) {
           updateData.status = 'NEEDS_REVIEW'
           message = 'Document needs additional review due to low verification score'
         }

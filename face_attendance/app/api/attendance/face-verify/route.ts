@@ -41,8 +41,7 @@ export async function POST(request: NextRequest) {
     // Perform face verification
     const verificationResult = await verifyFaceRecognition(
       faceImageData,
-      faceProfile.descriptors,
-      threshold
+      faceProfile.descriptors
     )
 
     // Log verification attempt

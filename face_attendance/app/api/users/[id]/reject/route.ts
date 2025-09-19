@@ -1,4 +1,9 @@
 // app/api/users/[id]/reject/route.ts
+import { NextRequest, NextResponse } from 'next/server'
+import { authMiddleware } from '@/lib/auth-middleware'
+import { prisma } from '@/lib/prisma'
+import { sendRejectionEmail } from '@/lib/email'
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }

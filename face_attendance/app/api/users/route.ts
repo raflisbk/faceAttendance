@@ -1,7 +1,7 @@
 // app/api/users/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { authMiddleware } from '@/lib/auth-middleware'
-import { createUserSchema, paginationSchema } from '@/lib/validations'
+import { createUserSchema } from '@/lib/validations'
 import { prisma } from '@/lib/prisma'
 import { redis } from '@/lib/redis'
 import { hash } from 'bcrypt'
@@ -169,7 +169,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Hash password
+    // Hash password - password is required for user creation
+    if (!validatedData.password) {
+      return NextResponse.json(
+        { error: 'Password is required for user creation' },
+        { status: 400 }
+      )
+    }
     const hashedPassword = await hash(validatedData.password, 12)
 
     // Create user with profile
@@ -179,7 +185,7 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
         firstName: validatedData.firstName,
         lastName: validatedData.lastName,
-        phoneNumber: validatedData.phoneNumber,
+        phoneNumber: validatedData.phone,
         role: validatedData.role,
         studentId: validatedData.studentId,
         employeeId: validatedData.employeeId,
