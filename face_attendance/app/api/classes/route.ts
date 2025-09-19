@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // Build cache key
-    const cacheKey = `classes:${user.role}:${user.id}:${page}:${limit}:${search || 'none'}:${department || 'all'}:${status || 'all'}:${lecturerId || 'all'}`
+    const cacheKey = `classes:${user.role}:${user.id}:${page}:${limit}:${search || 'none'}:${status || 'all'}:${lecturerId || 'all'}`
 
     // Try cache first
     const cachedData = await redis.get(cacheKey)
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     } else if (user.role === 'STUDENT') {
       whereClause.enrollments = {
         some: {
-          studentId: user.id
+          userId: user.id
         }
       }
     }
@@ -56,12 +56,8 @@ export async function GET(request: NextRequest) {
       ]
     }
 
-    if (department) {
-      whereClause.department = department
-    }
-
-    if (status) {
-      whereClause.status = status
+    if (status === 'active' || status === 'inactive') {
+      whereClause.isActive = status === 'active'
     }
 
     if (lecturerId && user.role === 'ADMIN') {
@@ -76,8 +72,7 @@ export async function GET(request: NextRequest) {
           lecturer: {
             select: {
               id: true,
-              firstName: true,
-              lastName: true,
+              name: true,
               email: true
             }
           },
@@ -87,17 +82,15 @@ export async function GET(request: NextRequest) {
               name: true,
               building: true,
               capacity: true,
-              wifiSSID: true
+              wifiSsid: true
             }
           },
-          schedule: true,
           enrollments: {
             include: {
-              student: {
+              user: {
                 select: {
                   id: true,
-                  firstName: true,
-                  lastName: true,
+                  name: true,
                   studentId: true
                 }
               }
@@ -111,7 +104,7 @@ export async function GET(request: NextRequest) {
           }
         },
         orderBy: [
-          { status: 'asc' },
+          { isActive: 'desc' },
           { name: 'asc' }
         ],
         skip,
@@ -123,38 +116,43 @@ export async function GET(request: NextRequest) {
     // Calculate attendance statistics for each class
     const classesWithStats = await Promise.all(
       classes.map(async (classItem: any) => {
-        const [totalSessions, attendanceStats] = await Promise.all([
-          prisma.attendance.groupBy({
-            by: ['date'],
-            where: { classId: classItem.id },
-            _count: { date: true }
-          }),
-          prisma.attendance.groupBy({
-            by: ['status'],
-            where: { classId: classItem.id },
-            _count: { status: true }
-          })
-        ])
+        // Get unique attendance dates and counts
+        const attendances = await prisma.attendance.findMany({
+          where: { classId: classItem.id },
+          select: {
+            timestamp: true,
+            isValid: true
+          }
+        })
 
-        const totalSessionsCount = totalSessions.length
-        const presentCount = attendanceStats.find(s => s.status === 'PRESENT')?._count.status || 0
-        const lateCount = attendanceStats.find(s => s.status === 'LATE')?._count.status || 0
-        const totalAttendances = presentCount + lateCount
+        // Calculate unique sessions by date
+        const sessionDates = new Set(
+          attendances.map(a => a.timestamp.toDateString())
+        )
+        const totalSessionsCount = sessionDates.size
+
+        // Calculate valid attendances
+        const validAttendances = attendances.filter(a => a.isValid).length
         const attendanceRate = classItem._count.enrollments > 0 && totalSessionsCount > 0
-          ? (totalAttendances / (classItem._count.enrollments * totalSessionsCount)) * 100
+          ? (validAttendances / (classItem._count.enrollments * totalSessionsCount)) * 100
           : 0
+
+        // Get latest session date
+        const latestAttendance = attendances.sort((a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        )[0]
 
         return {
           ...classItem,
           enrollment: {
             current: classItem._count.enrollments,
-            capacity: classItem.location.capacity,
+            capacity: classItem.capacity,
             waitlist: 0 // TODO: Implement waitlist
           },
           attendance: {
-            averageRate: attendanceRate,
+            averageRate: Math.round(attendanceRate * 100) / 100,
             totalSessions: totalSessionsCount,
-            lastSession: totalSessions[0]?.date || null
+            lastSession: latestAttendance?.timestamp || null
           }
         }
       })
@@ -238,40 +236,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create class with schedule
+    // Create class
     const newClass = await prisma.class.create({
       data: {
         name: validatedData.name,
         code: validatedData.code,
         description: validatedData.description,
-        department: validatedData.department,
-        semester: validatedData.semester,
-        academicYear: validatedData.academicYear,
-        credits: validatedData.credits,
         capacity: validatedData.capacity,
+        duration: 120, // 2 hours default
         lecturerId: validatedData.lecturerId,
         locationId: validatedData.locationId,
-        status: 'ACTIVE',
+        isActive: true,
         schedule: {
-          create: {
-            dayOfWeek: validatedData.schedule.dayOfWeek,
-            startTime: validatedData.schedule.startTime,
-            endTime: validatedData.schedule.endTime,
-            duration: validatedData.schedule.duration || 120 // 2 hours default
-          }
+          dayOfWeek: validatedData.schedule?.dayOfWeek || [],
+          startTime: validatedData.schedule?.startTime,
+          endTime: validatedData.schedule?.endTime,
+          timeSlots: validatedData.schedule?.timeSlots || []
         }
       },
       include: {
         lecturer: {
           select: {
             id: true,
-            firstName: true,
-            lastName: true,
+            name: true,
             email: true
           }
         },
-        location: true,
-        schedule: true
+        location: true
       }
     })
 

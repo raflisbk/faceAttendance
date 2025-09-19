@@ -64,7 +64,7 @@ export default function RegisterPage() {
           <RegistrationStep2
             onNext={(data) => handleStepComplete(2, data)}
             onBack={handleBackStep}
-            registrationId={registrationData.registrationId}
+            {...(registrationData.registrationId && { registrationId: registrationData.registrationId })}
             initialData={registrationData.step2}
           />
         )
@@ -73,7 +73,7 @@ export default function RegisterPage() {
           <RegistrationStep3
             onNext={(data) => handleStepComplete(3, data)}
             onBack={handleBackStep}
-            registrationId={registrationData.registrationId}
+            {...(registrationData.registrationId && { registrationId: registrationData.registrationId })}
             initialData={registrationData.step3}
           />
         )

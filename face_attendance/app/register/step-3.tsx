@@ -9,7 +9,7 @@ interface RegistrationStep3Props {
   initialData?: any
 }
 
-export function RegistrationStep3({ onNext, onBack, registrationId, initialData }: RegistrationStep3Props) {
+export function RegistrationStep3({ onNext, onBack }: RegistrationStep3Props) {
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-white">Face Enrollment</h2>

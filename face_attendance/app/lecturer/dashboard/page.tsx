@@ -8,7 +8,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useToastHelpers } from '@/components/ui/toast'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { 
+import {
   BookOpen,
   Users,
   Calendar,
@@ -16,25 +16,20 @@ import {
   TrendingUp,
   TrendingDown,
   CheckCircle,
-  XCircle,
   AlertCircle,
   QrCode,
-  Camera,
   BarChart3,
   Download,
   RefreshCw,
   Plus,
-  Edit,
   Eye,
-  MapPin,
-  Wifi
+  MapPin
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ApiClient } from '@/lib/api-client'
 import { useAuthStore } from '@/store/auth-store'
-import { FormatUtils, DateUtils } from '@/lib/utils'
+import { FormatUtils } from '@/lib/utils'
 import { QRCodeGenerator } from '@/components/attendance/QRCodeGenerator'
-import { AttendanceOverview } from '@/components/attendance/AttendanceOverview'
 import { ClassList } from '@/components/classes/ClassList'
 
 interface LecturerStats {
@@ -122,16 +117,21 @@ export default function LecturerDashboard() {
       setError('')
       
       const [statsResponse, classesResponse] = await Promise.all([
-        ApiClient.get('/api/lecturer/stats'),
-        ApiClient.get('/api/lecturer/today-classes')
+        ApiClient.get<LecturerStats>('/api/lecturer/stats'),
+        ApiClient.get<TodayClass[]>('/api/lecturer/today-classes')
       ])
 
-      setStats(statsResponse.data)
-      setTodayClasses(classesResponse.data)
+      if (statsResponse.success && statsResponse.data) {
+        setStats(statsResponse.data)
+      }
+
+      if (classesResponse.success && classesResponse.data) {
+        setTodayClasses(classesResponse.data)
+      }
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || 'Failed to load dashboard data'
       setError(errorMessage)
-      toast.showError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setIsLoading(false)
       setIsRefreshing(false)
@@ -147,31 +147,33 @@ export default function LecturerDashboard() {
     setShowQRGenerator(true)
   }
 
-  const handleQRGenerated = () => {
-    setShowQRGenerator(false)
-    setSelectedClassForQR(null)
-    loadDashboardData(true) // Refresh to update QR status
-    toast.showSuccess('QR Code generated successfully!')
-  }
 
   const handleExportAttendance = async (classId: string) => {
     try {
-      const response = await ApiClient.get(`/api/lecturer/classes/${classId}/attendance/export`, {
-        responseType: 'blob'
+      const response = await fetch(`/api/lecturer/classes/${classId}/attendance/export`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
       })
-      
-      const url = window.URL.createObjectURL(new Blob([response.data]))
+
+      if (!response.ok) {
+        throw new Error('Export failed')
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.setAttribute('download', `attendance_${classId}_${DateUtils.formatDate(new Date(), 'yyyy-MM-dd')}.xlsx`)
+      link.setAttribute('download', `attendance_${classId}_${new Date().toISOString().split('T')[0]}.xlsx`)
       document.body.appendChild(link)
       link.click()
       link.remove()
       window.URL.revokeObjectURL(url)
       
-      toast.showSuccess('Attendance report exported successfully')
+      toast.success('Attendance report exported successfully')
     } catch (error) {
-      toast.showError('Failed to export attendance report')
+      toast.error('Failed to export attendance report')
     }
   }
 
@@ -213,10 +215,10 @@ export default function LecturerDashboard() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-white mb-2">
-              Welcome back, Prof. {user?.firstName}!
+              Welcome back, Prof. {user?.name?.split(' ')[0] || 'Lecturer'}!
             </h1>
             <p className="text-slate-400">
-              {DateUtils.formatDate(new Date(), 'EEEE, MMMM do, yyyy')}
+              {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </p>
           </div>
           
@@ -507,17 +509,19 @@ export default function LecturerDashboard() {
           </TabsContent>
 
           <TabsContent value="classes">
-            <ClassList
-              userRole="LECTURER"
-              userId={user?.id}
-            />
+            {user?.id && (
+              <ClassList
+                userRole="LECTURER"
+                userId={user.id}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="attendance">
-            <AttendanceOverview
-              userRole="LECTURER"
-              userId={user?.id}
-            />
+            <div className="text-center py-8 text-slate-400">
+              <BarChart3 className="w-12 h-12 mx-auto mb-4" />
+              <p>Attendance overview will be implemented</p>
+            </div>
           </TabsContent>
         </Tabs>
 
@@ -542,9 +546,6 @@ export default function LecturerDashboard() {
                 <QRCodeGenerator
                   lecturerId={user?.id || ''}
                   userRole="LECTURER"
-                  onGenerated={handleQRGenerated}
-                  onCancel={() => setShowQRGenerator(false)}
-                  selectedClassId={selectedClassForQR}
                 />
               </CardContent>
             </Card>

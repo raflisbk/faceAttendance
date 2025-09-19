@@ -136,15 +136,19 @@ export const createClassSchema = z.object({
   name: z.string().min(1, 'Class name is required').max(200, 'Name too long'),
   code: z.string().min(1, 'Class code is required').max(20, 'Code too long'),
   description: z.string().optional(),
+  department: z.string().min(1, 'Department is required'),
+  semester: z.string().min(1, 'Semester is required'),
+  academicYear: z.string().min(1, 'Academic year is required'),
+  credits: z.number().int().min(1, 'Credits must be at least 1').max(10, 'Credits too high'),
+  capacity: z.number().int().min(1, 'Capacity must be at least 1').max(1000, 'Capacity too large'),
   lecturerId: z.string().uuid('Invalid lecturer ID'),
   locationId: z.string().uuid('Invalid location ID'),
-  capacity: z.number().int().min(1, 'Capacity must be at least 1').max(1000, 'Capacity too large'),
-  isActive: z.boolean().default(true),
-  schedule: z.array(z.object({
-    dayOfWeek: z.number().int().min(0).max(6), // 0 = Sunday, 6 = Saturday
+  schedule: z.object({
+    dayOfWeek: z.enum(['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']),
     startTime: z.string().regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format (HH:MM)'),
     endTime: z.string().regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format (HH:MM)'),
-  })).min(1, 'At least one schedule is required'),
+    duration: z.number().int().min(30, 'Duration must be at least 30 minutes').max(480, 'Duration too long').optional(),
+  }),
 })
 
 export const updateClassSchema = createClassSchema.partial()

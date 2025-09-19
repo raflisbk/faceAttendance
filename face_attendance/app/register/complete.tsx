@@ -8,7 +8,7 @@ interface RegistrationCompleteProps {
   onComplete: () => void
 }
 
-export function RegistrationComplete({ registrationData, onComplete }: RegistrationCompleteProps) {
+export function RegistrationComplete({ onComplete }: RegistrationCompleteProps) {
   return (
     <div className="space-y-6 text-center">
       <div className="flex justify-center">

@@ -27,6 +27,64 @@ export interface EmailProvider {
 }
 
 /**
+ * Resend email provider for production
+ */
+class ResendEmailProvider implements EmailProvider {
+  private resend: any
+
+  constructor() {
+    // Dynamic import Resend to avoid errors if not installed
+    if (process.env.RESEND_API_KEY) {
+      try {
+        const { Resend } = require('resend')
+        this.resend = new Resend(process.env.RESEND_API_KEY)
+      } catch (error) {
+        console.warn('Resend not available, falling back to mock provider')
+        this.resend = null
+      }
+    }
+  }
+
+  async sendEmail(options: EmailOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    if (!this.resend) {
+      console.log('📧 Resend not configured, falling back to console log:')
+      console.log('To:', options.to)
+      console.log('Subject:', options.subject)
+      return {
+        success: true,
+        messageId: `fallback-${Date.now()}`
+      }
+    }
+
+    try {
+      const fromEmail = process.env.FROM_EMAIL || 'noreply@localhost.com'
+
+      const data = await this.resend.emails.send({
+        from: fromEmail,
+        to: Array.isArray(options.to) ? options.to : [options.to],
+        cc: options.cc,
+        bcc: options.bcc,
+        subject: options.subject,
+        html: options.html,
+        text: options.text,
+        attachments: options.attachments
+      })
+
+      return {
+        success: true,
+        messageId: data.id
+      }
+    } catch (error) {
+      console.error('Resend email error:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown email error'
+      }
+    }
+  }
+}
+
+/**
  * Mock email provider for development
  */
 class MockEmailProvider implements EmailProvider {
@@ -322,7 +380,11 @@ function createAttendanceNotificationTemplate(
 }
 
 // Create default email service instance
-const emailService = new EmailService(new MockEmailProvider())
+const emailProvider = process.env.NODE_ENV === 'production' || process.env.RESEND_API_KEY
+  ? new ResendEmailProvider()
+  : new MockEmailProvider()
+
+const emailService = new EmailService(emailProvider)
 
 // Export convenience functions
 export async function sendVerificationEmail(email: string, token: string): Promise<boolean> {
@@ -351,5 +413,5 @@ export async function sendAttendanceNotification(
   return emailService.sendAttendanceNotification(email, studentName, className, status, date)
 }
 
-export { EmailService, MockEmailProvider }
+export { EmailService, MockEmailProvider, ResendEmailProvider }
 export type { EmailOptions, EmailTemplate, EmailProvider }

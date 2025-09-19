@@ -8,7 +8,10 @@
       "Bash(awk:*)",
       "Bash(npm install:*)",
       "Bash(npm run type-check:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(npm run:*)",
+      "Bash(/dev/null)",
+      "Bash(echo \"Build status: $?\")"
     ],
     "deny": [],
     "ask": []

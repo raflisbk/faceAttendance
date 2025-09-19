@@ -262,6 +262,22 @@ model AuditLog {
   @@map("audit_logs")
 }
 
+model OTP {
+  id        String   @id @default(cuid())
+  code      String
+  email     String
+  purpose   String   @default("EMAIL_VERIFICATION")
+  expiresAt DateTime @map("expires_at")
+  attempts  Int      @default(0)
+  isUsed    Boolean  @default(false) @map("is_used")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([email, purpose])
+  @@index([expiresAt])
+  @@map("otps")
+}
+
 // Enums
 enum UserRole {
   STUDENT

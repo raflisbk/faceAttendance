@@ -27,9 +27,8 @@ import { cn } from '@/lib/utils'
 import { ApiClient } from '@/lib/api-client'
 import { FaceCapture } from '@/components/face/FaceCapture'
 import { QRScanner } from '@/components/attendance/QRScanner'
-import { AttendanceHistory } from '@/components/attendance/AttendanceHistory'
 import { useAuthStore } from '@/store/auth-store'
-import { FormatUtils, DateUtils } from '@/lib/utils'
+import { FormatUtils } from '@/lib/utils'
 
 interface DashboardStats {
   totalClasses: number
@@ -92,16 +91,20 @@ export default function StudentDashboard() {
       setError('')
       
       const [statsResponse, classesResponse] = await Promise.all([
-        ApiClient.get('/api/student/stats'),
-        ApiClient.get('/api/student/today-classes')
+        ApiClient.get<DashboardStats>('/api/student/stats'),
+        ApiClient.get<TodayClass[]>('/api/student/today-classes')
       ])
 
-      setStats(statsResponse.data)
-      setTodayClasses(classesResponse.data)
+      if (statsResponse.data) {
+        setStats(statsResponse.data)
+      }
+      if (classesResponse.data) {
+        setTodayClasses(classesResponse.data)
+      }
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || 'Failed to load dashboard data'
       setError(errorMessage)
-      toast.showError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -120,14 +123,14 @@ export default function StudentDashboard() {
       })
 
       if (response.success) {
-        toast.showSuccess(response.message)
+        toast.success('Check-in successful!')
         setActiveCheckIn(null)
         setCheckInMethod(null)
         await loadDashboardData() // Refresh data
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || 'Check-in failed'
-      toast.showError(errorMessage)
+      toast.error(errorMessage)
     }
   }
 
@@ -173,10 +176,10 @@ export default function StudentDashboard() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">
-            Welcome back, {user?.firstName}!
+            Welcome back, {user?.name}!
           </h1>
           <p className="text-slate-400">
-            {DateUtils.formatDate(new Date(), 'EEEE, MMMM do, yyyy')}
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         </div>
 
@@ -442,15 +445,24 @@ export default function StudentDashboard() {
               <CardContent>
                 {checkInMethod === 'face' ? (
                   <FaceCapture
-                    mode="attendance"
-                    onCapture={(data) => handleCheckInComplete(activeCheckIn, data)}
-                    onCancel={handleCheckInCancel}
-                    requireWifiValidation={true}
+                    onCapture={(data) => handleCheckInComplete(activeCheckIn, { imageData: data })}
+                    onError={(error) => {
+                      toast.error(error)
+                      handleCheckInCancel()
+                    }}
+                    width={640}
+                    height={480}
+                    showPreview={true}
                   />
                 ) : (
                   <QRScanner
-                    onScan={(data) => handleCheckInComplete(activeCheckIn, data)}
-                    onCancel={handleCheckInCancel}
+                    onScan={(data) => handleCheckInComplete(activeCheckIn, { qrCode: data })}
+                    onError={(error) => {
+                      toast.error(error)
+                      handleCheckInCancel()
+                    }}
+                    onClose={handleCheckInCancel}
+                    isActive={true}
                   />
                 )}
               </CardContent>

@@ -40,41 +40,50 @@ export default function LoginPage() {
   
   const router = useRouter()
   const toast = useToastHelpers()
-  const { setUser, setIsAuthenticated } = useAuthStore()
+  const { login } = useAuthStore()
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isValid },
-    watch
+    formState: { errors, isValid }
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     mode: 'onChange'
   })
-
-  const watchedFields = watch()
 
   const onSubmit = async (data: LoginFormData) => {
     try {
       setIsLoading(true)
       setError('')
 
-      const response = await ApiClient.post('/api/auth/login', data)
+      const response = await ApiClient.post<{
+        user: {
+          id: string
+          name: string
+          email: string
+          role: 'ADMIN' | 'LECTURER' | 'STUDENT'
+          status: string
+          avatar?: string
+          emailVerified: boolean
+          phoneVerified: boolean
+          registrationStep: number
+        }
+        token: string
+      }>('/api/auth/login', data)
 
-      if (response.success) {
-        setUser(response.user)
-        setIsAuthenticated(true)
-        
-        toast.showSuccess('Login successful!')
-        
+      if (response.success && response.data) {
+        login(response.data.user, response.data.token)
+
+        toast.success('Login successful!')
+
         // Redirect based on user role
-        const redirectPath = getRedirectPath(response.user.role, response.user.status)
+        const redirectPath = getRedirectPath(response.data.user.role, response.data.user.status)
         router.push(redirectPath)
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || 'Login failed. Please try again.'
       setError(errorMessage)
-      toast.showError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -99,9 +108,9 @@ export default function LoginPage() {
 
   const handleDemoLogin = async (role: 'ADMIN' | 'LECTURER' | 'STUDENT') => {
     const demoCredentials = {
-      ADMIN: { email: 'admin@demo.com', password: 'demo123' },
-      LECTURER: { email: 'lecturer@demo.com', password: 'demo123' },
-      STUDENT: { email: 'student@demo.com', password: 'demo123' }
+      ADMIN: { email: 'admin@demo.com', password: 'demo123', rememberMe: false },
+      LECTURER: { email: 'lecturer@demo.com', password: 'demo123', rememberMe: false },
+      STUDENT: { email: 'student@demo.com', password: 'demo123', rememberMe: false }
     }
 
     const credential = demoCredentials[role]

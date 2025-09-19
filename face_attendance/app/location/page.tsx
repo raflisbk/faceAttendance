@@ -87,13 +87,21 @@ export default function LocationsPage() {
         )
       })
       
-      const response = await ApiClient.get(`/api/locations?${params}`)
-      setLocations(response.data)
-      setTotalPages(response.pagination.totalPages)
+      const response = await ApiClient.get<{
+        data: Location[]
+        pagination: {
+          totalPages: number
+        }
+      }>(`/api/location?${params}`)
+
+      if (response.success && response.data) {
+        setLocations(response.data.data)
+        setTotalPages(response.data.pagination.totalPages)
+      }
       
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || 'Failed to load locations'
-      toast.showError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -105,12 +113,12 @@ export default function LocationsPage() {
     }
 
     try {
-      await ApiClient.delete(`/api/locations/${locationId}`)
-      toast.showSuccess('Location deleted successfully')
+      await ApiClient.delete(`/api/location/${locationId}`)
+      toast.success('Location deleted successfully')
       await loadLocations()
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || 'Failed to delete location'
-      toast.showError(errorMessage)
+      toast.error(errorMessage)
     }
   }
 

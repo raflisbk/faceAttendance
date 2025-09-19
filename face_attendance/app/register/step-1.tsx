@@ -7,7 +7,7 @@ interface RegistrationStep1Props {
   initialData?: any
 }
 
-export function RegistrationStep1({ onNext, initialData }: RegistrationStep1Props) {
+export function RegistrationStep1({ onNext }: RegistrationStep1Props) {
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-white">Basic Information</h2>

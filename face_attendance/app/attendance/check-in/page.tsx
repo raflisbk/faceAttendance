@@ -36,7 +36,10 @@ import type { ApiResponse } from '@/lib/api-client'
 // Helper function to convert data URL to File
 function dataURLtoFile(dataurl: string, filename: string): File {
   const arr = dataurl.split(',')
-  const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg'
+  if (arr.length < 2 || !arr[1]) {
+    throw new Error('Invalid data URL format')
+  }
+  const mime = arr[0]?.match(/:(.*?);/)?.[1] || 'image/jpeg'
   const bstr = atob(arr[1])
   let n = bstr.length
   const u8arr = new Uint8Array(n)
@@ -101,7 +104,10 @@ export default function CheckInPage() {
       // In a real implementation, this would use a WiFi detection library or native API
       // For demo purposes, we'll simulate WiFi detection
       const mockSSIDs = ['Campus-WiFi-Room101', 'Campus-WiFi-Room102', 'Campus-WiFi-Lab1']
-      setWifiSSID(mockSSIDs[Math.floor(Math.random() * mockSSIDs.length)])
+      const selectedSSID = mockSSIDs[Math.floor(Math.random() * mockSSIDs.length)]
+      if (selectedSSID) {
+        setWifiSSID(selectedSSID)
+      }
     } catch (error) {
       console.warn('WiFi detection failed:', error)
     }

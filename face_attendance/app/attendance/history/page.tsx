@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { 
+import {
   Calendar,
   Clock,
   Search,
@@ -24,15 +24,13 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  BarChart3,
   TrendingUp,
   Users,
   BookOpen
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ApiClient } from '@/lib/api-client'
-import { useAuthStore } from '@/store/auth-store'
-import { FormatUtils, DateUtils } from '@/lib/utils'
+import { FormatUtils } from '@/lib/utils'
 
 interface AttendanceRecord {
   id: string
@@ -76,7 +74,6 @@ export default function AttendanceHistoryPage() {
     classId: ''
   })
   
-  const { user } = useAuthStore()
   const toast = useToastHelpers()
 
   useEffect(() => {
@@ -96,17 +93,22 @@ export default function AttendanceHistoryPage() {
       })
       
       const [historyResponse, statsResponse] = await Promise.all([
-        ApiClient.get(`/api/attendance/history?${params}`),
-        ApiClient.get('/api/student/stats')
+        ApiClient.get<{data: AttendanceRecord[], pagination: {totalPages: number}}>(`/api/attendance/history?${params}`),
+        ApiClient.get<AttendanceStats>('/api/student/stats')
       ])
-      
-      setRecords(historyResponse.data)
-      setTotalPages(historyResponse.pagination.totalPages)
-      setStats(statsResponse.data)
+
+      if (historyResponse.success && historyResponse.data) {
+        setRecords(historyResponse.data.data)
+        setTotalPages(historyResponse.data.pagination.totalPages)
+      }
+
+      if (statsResponse.success && statsResponse.data) {
+        setStats(statsResponse.data)
+      }
       
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || 'Failed to load attendance history'
-      toast.showError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -122,22 +124,30 @@ export default function AttendanceHistoryPage() {
         )
       })
       
-      const response = await ApiClient.get(`/api/attendance/export?${params}`, {
-        responseType: 'blob'
+      const response = await fetch(`/api/attendance/export?${params}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
       })
-      
-      const url = window.URL.createObjectURL(new Blob([response.data]))
+
+      if (!response.ok) {
+        throw new Error('Export failed')
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.setAttribute('download', `attendance_history_${DateUtils.formatDate(new Date(), 'yyyy-MM-dd')}.xlsx`)
+      link.setAttribute('download', `attendance_history_${new Date().toISOString().split('T')[0]}.xlsx`)
       document.body.appendChild(link)
       link.click()
       link.remove()
       window.URL.revokeObjectURL(url)
       
-      toast.showSuccess('Attendance history exported successfully')
+      toast.success('Attendance history exported successfully')
     } catch (error) {
-      toast.showError('Failed to export attendance history')
+      toast.error('Failed to export attendance history')
     } finally {
       setIsExporting(false)
     }
@@ -384,7 +394,7 @@ export default function AttendanceHistoryPage() {
                         <div className="flex items-center space-x-6 text-sm text-slate-300">
                           <div className="flex items-center space-x-1">
                             <Calendar className="w-4 h-4 text-slate-400" />
-                            <span>{DateUtils.formatDate(new Date(record.date), 'MMM dd, yyyy')}</span>
+                            <span>{new Date(record.date).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}</span>
                           </div>
                           
                           {record.checkInTime && (

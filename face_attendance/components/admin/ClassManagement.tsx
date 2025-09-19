@@ -67,11 +67,17 @@ export function ClassManagement() {
         ...(statusFilter !== 'ALL' && { status: statusFilter })
       })
 
-      const response = await ApiClient.get(`/api/admin/classes?${params}`)
-      setClasses(response.data.classes)
-      setTotalPages(response.data.pagination.totalPages)
+      const response = await ApiClient.get<{
+        classes: any[]
+        pagination: { totalPages: number }
+      }>(`/api/admin/classes?${params}`)
+
+      if (response.data) {
+        setClasses(response.data.classes)
+        setTotalPages(response.data.pagination.totalPages)
+      }
     } catch (error) {
-      toast.showError('Failed to load classes')
+      toast.error('Failed to load classes')
     } finally {
       setIsLoading(false)
     }
@@ -83,9 +89,9 @@ export function ClassManagement() {
         isActive: !currentStatus
       })
       await loadClasses()
-      toast.showSuccess('Class status updated successfully')
+      toast.success('Class status updated successfully')
     } catch (error) {
-      toast.showError('Failed to update class status')
+      toast.error('Failed to update class status')
     }
   }
 

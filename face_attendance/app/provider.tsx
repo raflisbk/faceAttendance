@@ -3,9 +3,6 @@
 import { ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { AuthProvider } from '@/providers/AuthProvider'
-import { ThemeProvider } from '@/providers/ThemeProvider'
-import { PWAProvider } from '@/providers/PWAProvider'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,18 +22,7 @@ interface ProvidersProps {
 export function Providers({ children }: ProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="dark"
-        enableSystem={false}
-        disableTransitionOnChange
-      >
-        <AuthProvider>
-          <PWAProvider>
-            {children}
-          </PWAProvider>
-        </AuthProvider>
-      </ThemeProvider>
+      {children}
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   )

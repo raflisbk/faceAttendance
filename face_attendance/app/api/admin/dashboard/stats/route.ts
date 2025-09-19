@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authMiddleware } from '@/lib/auth-middleware'
 import { prisma } from '@/lib/prisma'
-import { EmailService } from '@/lib/email-service'
+import { sendApprovalEmail, sendRejectionEmail } from '@/lib/email'
 import { redis } from '@/lib/redis'
 
 export async function GET(request: NextRequest) {
@@ -251,13 +251,9 @@ export async function POST(request: NextRequest) {
           ])
 
           // Send approval email
-          await EmailService.getInstance().sendAccountApproved(
+          await sendApprovalEmail(
             userToProcess.email,
-            userToProcess.name,
-            userToProcess.email,
-            userToProcess.role,
-            userToProcess.studentId || userToProcess.staffId || userToProcess.id,
-            `${process.env.NEXTAUTH_URL}/login`
+            userToProcess.name || 'User'
           )
 
           // Clear user cache
@@ -278,11 +274,10 @@ export async function POST(request: NextRequest) {
           })
 
           // Send rejection email
-          await EmailService.getInstance().sendAccountRejected(
+          await sendRejectionEmail(
             userToProcess.email,
-            userToProcess.name,
-            reason || 'Your account application has been rejected',
-            process.env.SUPPORT_EMAIL || 'support@faceattendance.com'
+            userToProcess.name || 'User',
+            reason || 'Your account application has been rejected'
           )
 
           results.push({

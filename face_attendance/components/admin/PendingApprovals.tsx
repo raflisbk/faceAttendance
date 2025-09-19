@@ -34,10 +34,12 @@ export function PendingApprovals() {
   const loadPendingUsers = async () => {
     try {
       setIsLoading(true)
-      const response = await ApiClient.get('/api/admin/users/pending')
-      setPendingUsers(response.data)
+      const response = await ApiClient.get<PendingUser[]>('/api/admin/users/pending')
+      if (response.data) {
+        setPendingUsers(response.data)
+      }
     } catch (error) {
-      toast.showError('Failed to load pending users')
+      toast.error('Failed to load pending users')
     } finally {
       setIsLoading(false)
     }
@@ -53,9 +55,9 @@ export function PendingApprovals() {
       })
 
       setPendingUsers(prev => prev.filter(user => user.id !== userId))
-      toast.showSuccess(`User ${action}d successfully`)
+      toast.success(`User ${action}d successfully`)
     } catch (error) {
-      toast.showError(`Failed to ${action} user`)
+      toast.error(`Failed to ${action} user`)
     } finally {
       setProcessingIds(prev => {
         const newSet = new Set(prev)

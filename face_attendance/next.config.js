@@ -1,16 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
-      },
-    },
-    serverComponentsExternalPackages: ['prisma', '@prisma/client'],
-  },
+  serverExternalPackages: ['prisma', '@prisma/client'],
   images: {
     remotePatterns: [
       {
@@ -64,7 +54,6 @@ const nextConfig = {
   },
   poweredByHeader: false,
   compress: true,
-  swcMinify: true,
   reactStrictMode: true,
   typescript: {
     ignoreBuildErrors: false,

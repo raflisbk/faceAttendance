@@ -45,10 +45,11 @@ export default function RootLayout({
       </head>
       <body className={cn(inter.className, "antialiased bg-slate-950 text-white")}>
         <Providers>
-          <AuthGuard>
-            {children}
-          </AuthGuard>
-          <Toaster />
+          <Toaster>
+            <AuthGuard>
+              {children}
+            </AuthGuard>
+          </Toaster>
         </Providers>
       </body>
     </html>

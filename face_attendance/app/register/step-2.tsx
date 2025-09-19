@@ -9,7 +9,7 @@ interface RegistrationStep2Props {
   initialData?: any
 }
 
-export function RegistrationStep2({ onNext, onBack, registrationId, initialData }: RegistrationStep2Props) {
+export function RegistrationStep2({ onNext, onBack }: RegistrationStep2Props) {
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-white">Document Upload</h2>

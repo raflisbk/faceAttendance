@@ -15,17 +15,16 @@ import { useToastHelpers } from '@/components/ui/toast'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  Calendar, 
-  MapPin, 
-  Shield, 
+import {
+  User,
+  Mail,
+  Phone,
+  Calendar,
+  MapPin,
+  Shield,
   Camera,
   FileText,
   Settings,
-  Bell,
   Lock,
   Trash2,
   RefreshCw,
@@ -37,7 +36,6 @@ import {
 import { cn } from '@/lib/utils'
 import { ApiClient } from '@/lib/api-client'
 import { useAuthStore } from '@/store/auth-store'
-import { FormatUtils, DateUtils } from '@/lib/utils'
 import { FaceCapture } from '@/components/face/FaceCapture'
 import type { z } from 'zod'
 
@@ -92,17 +90,15 @@ export default function ProfilePage() {
   const [error, setError] = useState<string>('')
   const [activeTab, setActiveTab] = useState('profile')
   const [showFaceCapture, setShowFaceCapture] = useState(false)
-  const [isUpdatingFace, setIsUpdatingFace] = useState(false)
   
-  const { user, setUser } = useAuthStore()
+  const { user, updateUser } = useAuthStore()
   const toast = useToastHelpers()
 
   const {
     register,
     handleSubmit,
     formState: { errors, isValid, isDirty },
-    reset,
-    setValue
+    reset
   } = useForm<ProfileFormData>({
     resolver: zodResolver(updateUserSchema),
     mode: 'onChange'
@@ -119,19 +115,19 @@ export default function ProfilePage() {
       setIsLoading(true)
       setError('')
       
-      const response = await ApiClient.get(`/api/users/${user?.id}`)
-      
-      if (response.success) {
+      const response = await ApiClient.get<UserProfile>(`/api/users/${user?.id}`)
+
+      if (response.success && response.data) {
         setProfile(response.data)
-        
+
         // Populate form with current data
         reset({
           firstName: response.data.firstName,
           lastName: response.data.lastName,
           email: response.data.email,
-          phoneNumber: response.data.phoneNumber,
+          phone: response.data.phoneNumber,
           department: response.data.department,
-          dateOfBirth: response.data.profile?.dateOfBirth?.split('T')[0],
+          dateOfBirth: response.data.profile?.dateOfBirth ? new Date(response.data.profile.dateOfBirth) : undefined,
           address: response.data.profile?.address,
           emergencyContact: response.data.profile?.emergencyContact,
           bio: response.data.profile?.bio
@@ -140,7 +136,7 @@ export default function ProfilePage() {
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || 'Failed to load profile'
       setError(errorMessage)
-      toast.showError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -151,38 +147,37 @@ export default function ProfilePage() {
       setIsSaving(true)
       setError('')
 
-      const response = await ApiClient.put(`/api/users/${user?.id}`, data)
+      const response = await ApiClient.put<UserProfile>(`/api/users/${user?.id}`, data)
 
-      if (response.success) {
+      if (response.success && response.data) {
         setProfile(response.data)
-        setUser({ ...user!, ...response.data })
-        toast.showSuccess('Profile updated successfully!')
+        updateUser({
+          name: `${response.data.firstName} ${response.data.lastName}`,
+          email: response.data.email
+        })
+        toast.success('Profile updated successfully!')
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || 'Failed to update profile'
       setError(errorMessage)
-      toast.showError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setIsSaving(false)
     }
   }
 
-  const handleFaceUpdate = async (faceData: any) => {
+  const handleFaceUpdate = async (faceData: string) => {
     try {
-      setIsUpdatingFace(true)
-      
-      const response = await ApiClient.post('/api/face/enrollment', faceData)
-      
+      const response = await ApiClient.post('/api/face/enrollment', { imageData: faceData })
+
       if (response.success) {
-        toast.showSuccess('Face profile updated successfully!')
+        toast.success('Face profile updated successfully!')
         setShowFaceCapture(false)
         await loadProfile() // Refresh profile data
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || 'Failed to update face profile'
-      toast.showError(errorMessage)
-    } finally {
-      setIsUpdatingFace(false)
+      toast.error(errorMessage)
     }
   }
 
@@ -195,11 +190,11 @@ export default function ProfilePage() {
 
     try {
       await ApiClient.delete(`/api/face/profile/${profile.faceProfile.id}`)
-      toast.showSuccess('Face profile deleted successfully')
+      toast.success('Face profile deleted successfully')
       await loadProfile()
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || 'Failed to delete face profile'
-      toast.showError(errorMessage)
+      toast.error(errorMessage)
     }
   }
 
@@ -320,7 +315,7 @@ export default function ProfilePage() {
               <div className="text-right">
                 <p className="text-sm text-slate-400">Member since</p>
                 <p className="text-white font-medium">
-                  {DateUtils.formatDate(new Date(profile.createdAt), 'MMM yyyy')}
+                  {new Date(profile.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                 </p>
               </div>
             </div>
@@ -420,21 +415,21 @@ export default function ProfilePage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="phoneNumber" className="text-slate-200">Phone Number</Label>
+                      <Label htmlFor="phone" className="text-slate-200">Phone Number</Label>
                       <div className="relative">
                         <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                         <Input
-                          id="phoneNumber"
+                          id="phone"
                           type="tel"
-                          {...register('phoneNumber')}
+                          {...register('phone')}
                           className="pl-10 bg-slate-800/50 border-slate-700 text-white"
                         />
                         {profile.phoneVerified && (
                           <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-400 w-4 h-4" />
                         )}
                       </div>
-                      {errors.phoneNumber && (
-                        <p className="text-sm text-red-400">{errors.phoneNumber.message}</p>
+                      {errors.phone && (
+                        <p className="text-sm text-red-400">{errors.phone.message}</p>
                       )}
                     </div>
 
@@ -624,7 +619,7 @@ export default function ProfilePage() {
                       <div className="p-4 bg-slate-800/30 rounded-lg text-center">
                         <p className="text-slate-400 text-sm">Enrolled</p>
                         <p className="text-lg font-semibold text-white">
-                          {DateUtils.formatDate(new Date(profile.faceProfile.enrolledAt), 'MMM dd, yyyy')}
+                          {new Date(profile.faceProfile.enrolledAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
                         </p>
                       </div>
                     </div>
@@ -686,11 +681,11 @@ export default function ProfilePage() {
                             {profile.document.type.replace('_', ' ')}
                           </p>
                           <p className="text-sm text-slate-400">
-                            Uploaded {DateUtils.formatDate(new Date(profile.document.uploadedAt), 'MMM dd, yyyy')}
+                            Uploaded {new Date(profile.document.uploadedAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
                           </p>
                           {profile.document.verifiedAt && (
                             <p className="text-sm text-green-400">
-                              Verified {DateUtils.formatDate(new Date(profile.document.verifiedAt), 'MMM dd, yyyy')}
+                              Verified {new Date(profile.document.verifiedAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
                             </p>
                           )}
                         </div>
@@ -804,10 +799,14 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent>
                 <FaceCapture
-                  mode="enrollment"
                   onCapture={handleFaceUpdate}
-                  onCancel={() => setShowFaceCapture(false)}
-                  isLoading={isUpdatingFace}
+                  onError={(error) => {
+                    toast.error(error)
+                    setShowFaceCapture(false)
+                  }}
+                  width={640}
+                  height={480}
+                  showPreview={true}
                 />
               </CardContent>
             </Card>
