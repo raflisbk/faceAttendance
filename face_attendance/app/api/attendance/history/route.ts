@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 
     // Build where clause
     const whereClause: any = {
-      studentId: user.id
+      userId: user.id
     }
 
     if (classId) {
@@ -42,12 +42,12 @@ export async function GET(request: NextRequest) {
     }
 
     if (startDate || endDate) {
-      whereClause.date = {}
+      whereClause.timestamp = {}
       if (startDate) {
-        whereClause.date.gte = new Date(startDate)
+        whereClause.timestamp.gte = new Date(startDate)
       }
       if (endDate) {
-        whereClause.date.lte = new Date(endDate)
+        whereClause.timestamp.lte = new Date(endDate)
       }
     }
 
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
     // Calculate statistics
     const stats = await prisma.attendance.groupBy({
       by: ['status'],
-      where: { studentId: user.id },
+      where: { userId: user.id },
       _count: {
         status: true
       }

@@ -21,32 +21,27 @@ export async function GET(request: NextRequest) {
     const todayClasses = await prisma.class.findMany({
       where: {
         enrollments: {
-          some: { studentId: user.id }
+          some: { userId: user.id }
         },
-        schedule: {
-          dayOfWeek: todayDayOfWeek
-        },
-        status: 'ACTIVE'
+        isActive: true
       },
       include: {
         lecturer: {
           select: {
-            firstName: true,
-            lastName: true
+            name: true
           }
         },
         location: {
           select: {
             id: true,
             name: true,
-            wifiSSID: true
+            wifiSsid: true
           }
         },
-        schedule: true,
         attendances: {
           where: {
-            studentId: user.id,
-            date: {
+            userId: user.id,
+            timestamp: {
               gte: startOfDay,
               lt: endOfDay
             }
@@ -54,9 +49,7 @@ export async function GET(request: NextRequest) {
         }
       },
       orderBy: {
-        schedule: {
-          startTime: 'asc'
-        }
+        createdAt: 'asc'
       }
     })
 

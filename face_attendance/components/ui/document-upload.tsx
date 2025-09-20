@@ -98,7 +98,11 @@ export function DocumentUpload({
       await new Promise(resolve => setTimeout(resolve, 3000))
 
       // Mock OCR results based on document type
-      const mockOCRData = {
+      const mockOCRData: {
+        extractedText: string
+        confidence: number
+        fields: Record<string, string>
+      } = {
         extractedText: `Sample extracted text from ${getDocumentTypeLabel(documentType)}`,
         confidence: 0.92,
         fields: documentType === 'STUDENT_ID' ? {

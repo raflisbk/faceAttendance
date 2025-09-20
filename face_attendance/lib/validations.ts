@@ -16,10 +16,11 @@ export const USER_STATUS = {
 } as const
 
 export const DOCUMENT_TYPES = {
-  ID_CARD: 'ID_CARD',
-  STUDENT_CARD: 'STUDENT_CARD',
-  TRANSCRIPT: 'TRANSCRIPT',
-  CERTIFICATE: 'CERTIFICATE'
+  STUDENT_ID: 'STUDENT_ID',
+  STAFF_ID: 'STAFF_ID',
+  NATIONAL_ID: 'NATIONAL_ID',
+  PASSPORT: 'PASSPORT',
+  DRIVING_LICENSE: 'DRIVING_LICENSE'
 } as const
 
 // Common validation patterns
@@ -106,10 +107,11 @@ export const updateUserSchema = createUserSchema.partial().omit({ password: true
 // Document validation schemas
 export const documentUploadSchema = z.object({
   type: z.enum([
-    DOCUMENT_TYPES.ID_CARD,
-    DOCUMENT_TYPES.STUDENT_CARD,
-    DOCUMENT_TYPES.TRANSCRIPT,
-    DOCUMENT_TYPES.CERTIFICATE
+    DOCUMENT_TYPES.STUDENT_ID,
+    DOCUMENT_TYPES.STAFF_ID,
+    DOCUMENT_TYPES.NATIONAL_ID,
+    DOCUMENT_TYPES.PASSPORT,
+    DOCUMENT_TYPES.DRIVING_LICENSE
   ]),
   file: z.any().refine((file) => file instanceof File, 'Valid file is required'),
   description: z.string().optional(),
@@ -117,10 +119,11 @@ export const documentUploadSchema = z.object({
 
 export const validateDocumentSchema = z.object({
   documentType: z.enum([
-    DOCUMENT_TYPES.ID_CARD,
-    DOCUMENT_TYPES.STUDENT_CARD,
-    DOCUMENT_TYPES.TRANSCRIPT,
-    DOCUMENT_TYPES.CERTIFICATE
+    DOCUMENT_TYPES.STUDENT_ID,
+    DOCUMENT_TYPES.STAFF_ID,
+    DOCUMENT_TYPES.NATIONAL_ID,
+    DOCUMENT_TYPES.PASSPORT,
+    DOCUMENT_TYPES.DRIVING_LICENSE
   ]),
   documentNumber: z.string().min(1, 'Document number is required'),
   expiryDate: z.date().nullable().optional(),
@@ -157,12 +160,16 @@ export const updateClassSchema = createClassSchema.partial()
 export const createLocationSchema = z.object({
   name: z.string().min(1, 'Location name is required').max(200, 'Name too long'),
   building: z.string().min(1, 'Building name is required').max(200, 'Building name too long'),
-  address: z.string().min(1, 'Address is required').max(500, 'Address too long'),
-  latitude: z.number().min(-90).max(90),
-  longitude: z.number().min(-180).max(180),
-  radius: z.number().min(1, 'Radius must be at least 1 meter').max(1000, 'Radius too large'),
-  wifiSSID: z.string().min(1, 'WiFi SSID is required').max(100, 'SSID too long'),
-  wifiPassword: z.string().optional(),
+  floor: z.string().min(1, 'Floor is required').max(50, 'Floor too long'),
+  room: z.string().min(1, 'Room is required').max(50, 'Room too long'),
+  wifiSsid: z.string().min(1, 'WiFi SSID is required').max(100, 'SSID too long'),
+  wifiSecurity: z.string().optional(),
+  gpsCoordinates: z.object({
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180)
+  }).optional(),
+  capacity: z.number().int().min(1, 'Capacity must be at least 1').max(1000, 'Capacity too large'),
+  additionalInfo: z.record(z.any()).optional(),
   isActive: z.boolean().default(true),
 })
 
@@ -175,7 +182,7 @@ export const checkInSchema = z.object({
   faceImage: z.any().refine((file) => file instanceof File, 'Face image is required'),
   method: z.enum(['FACE_RECOGNITION', 'QR_CODE']).default('FACE_RECOGNITION'),
   timestamp: z.date().default(() => new Date()),
-  wifiSSID: z.string().optional(),
+  wifiSsid: z.string().optional(),
   coordinates: z.object({
     latitude: z.number().min(-90).max(90),
     longitude: z.number().min(-180).max(180),

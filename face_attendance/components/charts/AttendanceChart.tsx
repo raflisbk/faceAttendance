@@ -41,10 +41,10 @@ export function AttendanceChart() {
     try {
       setIsLoading(true)
       const response = await ApiClient.get(`/api/admin/analytics/attendance?period=${period}`)
-      setData(response.data.chartData)
-      setStats(response.data.stats)
+      setData((response.data as any).chartData)
+      setStats((response.data as any).stats)
     } catch (error) {
-      toast.showError('Failed to load attendance data')
+      toast.error('Failed to load attendance data')
     } finally {
       setIsLoading(false)
     }

@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     // Validate WiFi location
     const validationResult = await validateWifiLocation(
       wifiSSID,
-      classData.location.wifiSSID,
+      classData.location.wifiSsid,
       coordinates
     )
 
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
         confidence: validationResult.confidence,
         distance: validationResult.distance,
         locationName: classData.location.name,
-        expectedSSID: classData.location.wifiSSID,
+        expectedSSID: classData.location.wifiSsid,
         detectedSSID: wifiSSID,
         validationMethod: 'WIFI_LOCATION',
         timestamp: new Date().toISOString()

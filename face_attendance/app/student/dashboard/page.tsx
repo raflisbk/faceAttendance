@@ -140,9 +140,9 @@ export default function StudentDashboard() {
   }
 
   const getAttendanceColor = (rate: number) => {
-    if (rate >= 80) return 'text-green-400'
-    if (rate >= 60) return 'text-yellow-400'
-    return 'text-red-400'
+    if (rate >= 80) return 'text-green-300'
+    if (rate >= 60) return 'text-yellow-300'
+    return 'text-red-300'
   }
 
   const getStatusIcon = (status?: string) => {
@@ -442,7 +442,7 @@ export default function StudentDashboard() {
                   </Button>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="relative z-10 chalk-particles">
                 {checkInMethod === 'face' ? (
                   <FaceCapture
                     onCapture={(data) => handleCheckInComplete(activeCheckIn, { imageData: data })}

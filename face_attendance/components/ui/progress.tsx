@@ -10,7 +10,7 @@ const Progress = React.forwardRef<
     ref={ref}
     className={cn(
       "relative h-4 w-full overflow-hidden rounded-full bg-secondary",
-      "bg-slate-200 dark:bg-slate-700",
+      "bg-gray-200 dark:bg-gray-700",
       className
     )}
     {...props}
@@ -18,9 +18,9 @@ const Progress = React.forwardRef<
     <ProgressPrimitive.Indicator
       className={cn(
         "h-full w-full flex-1 bg-primary transition-all",
-        "bg-slate-800 dark:bg-slate-300",
+        "bg-gray-800 dark:bg-gray-300",
         // Blackboard theme - chalk-like progress
-        "bg-gradient-to-r from-slate-600 to-slate-800 dark:from-slate-200 dark:to-slate-400",
+        "bg-gradient-to-r from-gray-600 to-gray-800 dark:from-gray-200 dark:to-gray-400",
         "shadow-sm"
       )}
       style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
@@ -57,15 +57,15 @@ const RegistrationProgress: React.FC<RegistrationProgressProps> = ({
               className={cn(
                 "w-4 h-4 rounded-full border-2 bg-white flex items-center justify-center",
                 index < currentStep
-                  ? "border-slate-800 bg-slate-800 dark:border-slate-300 dark:bg-slate-300"
+                  ? "border-gray-800 bg-gray-800 dark:border-gray-300 dark:bg-gray-300"
                   : index === currentStep - 1
-                  ? "border-slate-600 bg-slate-600 dark:border-slate-400 dark:bg-slate-400"
-                  : "border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-800"
+                  ? "border-gray-600 bg-slate-600 dark:border-gray-400 dark:bg-slate-400"
+                  : "border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-800"
               )}
             >
               {index < currentStep && (
                 <svg
-                  className="w-2 h-2 text-white dark:text-slate-800"
+                  className="w-2 h-2 text-white dark:text-gray-800"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
@@ -89,10 +89,10 @@ const RegistrationProgress: React.FC<RegistrationProgressProps> = ({
             className={cn(
               "text-center font-medium max-w-[80px]",
               index < currentStep
-                ? "text-slate-800 dark:text-slate-200"
+                ? "text-gray-800 dark:text-gray-200"
                 : index === currentStep - 1
-                ? "text-slate-600 dark:text-slate-400"
-                : "text-slate-400 dark:text-slate-600"
+                ? "text-gray-600 dark:text-gray-400"
+                : "text-gray-400 dark:text-gray-600"
             )}
           >
             {step}
@@ -102,7 +102,7 @@ const RegistrationProgress: React.FC<RegistrationProgressProps> = ({
 
       {/* Current Step Info */}
       <div className="text-center">
-        <p className="text-sm text-slate-600 dark:text-slate-400">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           Step {currentStep} of {totalSteps}: {steps[currentStep - 1]}
         </p>
       </div>

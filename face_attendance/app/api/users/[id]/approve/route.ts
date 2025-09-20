@@ -23,7 +23,7 @@ export async function POST(
       where: { id: userId },
       include: {
         faceProfile: true,
-        document: true
+        documents: true
       }
     })
 
@@ -34,7 +34,7 @@ export async function POST(
       )
     }
 
-    if (userToApprove.status !== 'PENDING_APPROVAL') {
+    if (userToApprove.status !== 'PENDING') {
       return NextResponse.json(
         { error: 'User is not pending approval' },
         { status: 400 }
@@ -48,25 +48,26 @@ export async function POST(
         data: {
           status: 'ACTIVE',
           approvedAt: new Date(),
-          approvedBy: user.id
+          approvedById: user.id
         }
       }),
       ...(userToApprove.faceProfile ? [
         prisma.faceProfile.update({
           where: { id: userToApprove.faceProfile.id },
-          data: { status: 'APPROVED' }
+          data: { status: 'ENROLLED' }
         })
       ] : []),
-      ...(userToApprove.document ? [
-        prisma.document.update({
-          where: { id: userToApprove.document.id },
-          data: { status: 'VERIFIED' }
-        })
-      ] : [])
+      ...(userToApprove.documents && userToApprove.documents.length > 0 ?
+        userToApprove.documents.map(doc =>
+          prisma.document.update({
+            where: { id: doc.id },
+            data: { status: 'VERIFIED' }
+          })
+        ) : [])
     ])
 
     // Send approval email
-    await sendApprovalEmail(userToApprove.email, userToApprove.firstName)
+    await sendApprovalEmail(userToApprove.email, userToApprove.name || 'User')
 
     return NextResponse.json({
       success: true,

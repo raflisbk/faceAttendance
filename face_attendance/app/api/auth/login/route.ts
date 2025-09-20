@@ -1,17 +1,17 @@
 // app/api/auth/login/route.ts
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { loginSchema } from '@/lib/validations'
 import { prisma } from '@/lib/prisma'
-import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import { handleApiError, createSuccessResponse, createErrorResponse, AppError } from '@/lib/api-error-handler'
+import { validateRequestBody } from '@/lib/api-validation'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key'
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const validatedData = loginSchema.parse(body)
+    const validatedData = await validateRequestBody(request, loginSchema)
 
     // Find user by email
     const user = await prisma.user.findUnique({
@@ -31,46 +31,34 @@ export async function POST(request: NextRequest) {
     })
 
     if (!user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Invalid email or password'
-        },
-        { status: 401 }
-      )
+      throw new AppError('Invalid email or password', 'INVALID_CREDENTIALS', 401)
     }
 
     // Check if account is active
     if (user.status === 'SUSPENDED') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Account has been suspended. Please contact administrator.'
-        },
-        { status: 403 }
+      throw new AppError(
+        'Account has been suspended. Please contact administrator.',
+        'ACCOUNT_SUSPENDED',
+        403
       )
     }
 
     if (user.status === 'REJECTED') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Account registration was rejected. Please contact administrator.'
-        },
-        { status: 403 }
+      throw new AppError(
+        'Account registration was rejected. Please contact administrator.',
+        'ACCOUNT_REJECTED',
+        403
       )
     }
 
     // Verify password
+    if (!user.password) {
+      throw new AppError('Invalid credentials', 'INVALID_CREDENTIALS', 401)
+    }
+
     const isPasswordValid = await bcrypt.compare(validatedData.password, user.password)
     if (!isPasswordValid) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Invalid email or password'
-        },
-        { status: 401 }
-      )
+      throw new AppError('Invalid email or password', 'INVALID_CREDENTIALS', 401)
     }
 
     // Generate JWT token
@@ -103,20 +91,18 @@ export async function POST(request: NextRequest) {
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        lastLoginAt: new Date(),
-        updatedAt: new Date()
+        lastLogin: new Date()
       }
     })
 
     // Set HTTP-only cookie if remember me is selected
-    const response = NextResponse.json({
-      success: true,
-      data: {
+    const response = createSuccessResponse(
+      {
         user: userData,
         token
       },
-      message: 'Login successful'
-    })
+      'Login successful'
+    )
 
     if (validatedData.rememberMe) {
       response.cookies.set('auth-token', token, {
@@ -130,24 +116,6 @@ export async function POST(request: NextRequest) {
     return response
 
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Invalid input data',
-          details: error.errors
-        },
-        { status: 400 }
-      )
-    }
-
-    console.error('Login error:', error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Internal server error'
-      },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

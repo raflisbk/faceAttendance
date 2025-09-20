@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authMiddleware } from '@/lib/auth-middleware'
 import { prisma } from '@/lib/prisma'
-import { validateFaceQuality, extractFaceDescriptors } from '@/lib/face-recognition'
+import { validateFaceQuality, extractFaceDescriptors } from '@/lib/face-recognition-server'
 import { uploadFaceImage } from '@/lib/cloudinary'
 
 export async function POST(request: NextRequest) {
@@ -61,16 +61,16 @@ export async function POST(request: NextRequest) {
       const existingDescriptors = faceProfile.descriptors || []
 
       // Limit to 5 images maximum
-      const updatedImages = [...existingImages, uploadResult.secure_url].slice(-5)
-      const updatedDescriptors = [...existingDescriptors, ...descriptors].slice(-5)
+      const updatedImages = [...(existingImages as string[]), uploadResult.secure_url].slice(-5)
+      const updatedDescriptors = [...(existingDescriptors as number[][]), ...descriptors].slice(-5)
 
       faceProfile = await prisma.faceProfile.update({
         where: { id: faceProfile.id },
         data: {
           images: updatedImages,
-          descriptors: updatedDescriptors,
+          faceDescriptors: JSON.parse(JSON.stringify(updatedDescriptors)),
           lastUpdated: new Date(),
-          status: updatedImages.length >= 3 ? 'PENDING_APPROVAL' : 'INCOMPLETE'
+          status: updatedImages.length >= 3 ? 'IN_PROGRESS' : 'NOT_ENROLLED'
         }
       })
     } else {
@@ -79,9 +79,10 @@ export async function POST(request: NextRequest) {
         data: {
           userId: user.id,
           images: [uploadResult.secure_url],
-          descriptors: descriptors,
-          status: 'INCOMPLETE',
-          createdAt: new Date(),
+          faceDescriptors: JSON.parse(JSON.stringify(descriptors)),
+          enrollmentImages: [uploadResult.secure_url],
+          qualityScore: 0.8,
+          status: 'NOT_ENROLLED',
           lastUpdated: new Date()
         }
       })
@@ -92,13 +93,13 @@ export async function POST(request: NextRequest) {
       data: {
         faceProfileId: faceProfile.id,
         status: faceProfile.status,
-        totalImages: faceProfile.images?.length || 0,
+        totalImages: (faceProfile.images as string[])?.length || 0,
         qualityScore: qualityCheck.score,
-        isComplete: (faceProfile.images?.length || 0) >= 3
+        isComplete: ((faceProfile.images as string[])?.length || 0) >= 3
       },
-      message: faceProfile.status === 'PENDING_APPROVAL'
+      message: faceProfile.status === 'IN_PROGRESS'
         ? 'Face profile completed and pending approval'
-        : `Face image captured successfully. ${3 - (faceProfile.images?.length || 0)} more images needed.`
+        : `Face image captured successfully. ${3 - ((faceProfile.images as string[])?.length || 0)} more images needed.`
     })
 
   } catch (error) {
@@ -140,8 +141,8 @@ export async function GET(request: NextRequest) {
       data: {
         faceProfileId: faceProfile.id,
         status: faceProfile.status,
-        totalImages: faceProfile.images?.length || 0,
-        isComplete: (faceProfile.images?.length || 0) >= 3,
+        totalImages: (faceProfile.images as string[])?.length || 0,
+        isComplete: ((faceProfile.images as string[])?.length || 0) >= 3,
         createdAt: faceProfile.createdAt,
         lastUpdated: faceProfile.lastUpdated
       }

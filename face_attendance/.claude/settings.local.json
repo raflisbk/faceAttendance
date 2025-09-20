@@ -14,7 +14,20 @@
       "Bash(echo \"Build status: $?\")",
       "Bash(npm audit:*)",
       "Bash(curl:*)",
-      "WebFetch(domain:localhost)"
+      "WebFetch(domain:localhost)",
+      "Bash(npx eslint:*)",
+      "Bash(npm ls:*)",
+      "Bash(npx prisma db push:*)",
+      "Bash(npx prisma migrate:*)",
+      "Bash(npx prisma generate:*)",
+      "Bash(find:*)",
+      "Bash(npx @next/codemod@canary next-lint-to-eslint-cli:*)",
+      "Bash(taskkill:*)",
+      "Bash(npx kill-port:*)",
+      "Bash(netstat:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Bash(npm cache clean:*)"
     ],
     "deny": [],
     "ask": []

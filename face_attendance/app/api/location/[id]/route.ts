@@ -42,18 +42,16 @@ export async function GET(
             lecturer: {
               select: {
                 id: true,
-                firstName: true,
-                lastName: true,
+                name: true,
                 email: true
               }
             },
             enrollments: {
               include: {
-                student: {
+                user: {
                   select: {
                     id: true,
-                    firstName: true,
-                    lastName: true,
+                    name: true,
                     studentId: true
                   }
                 }
@@ -149,10 +147,10 @@ export async function PUT(
     }
 
     // Check if WiFi SSID already exists (excluding current location)
-    if (validatedData.wifiSSID) {
+    if (validatedData.wifiSsid) {
       const duplicateWiFi = await prisma.location.findFirst({
         where: {
-          wifiSSID: validatedData.wifiSSID,
+          wifiSsid: validatedData.wifiSsid,
           id: { not: locationId }
         }
       })
@@ -169,7 +167,6 @@ export async function PUT(
       where: { id: locationId },
       data: {
         ...validatedData,
-        updatedAt: new Date()
       },
       include: {
         classes: {
@@ -177,7 +174,7 @@ export async function PUT(
             id: true,
             name: true,
             code: true,
-            status: true
+            isActive: true
           }
         },
         _count: {

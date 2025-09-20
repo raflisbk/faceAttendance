@@ -39,10 +39,9 @@ export async function GET(
     const userData = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        profile: true,
-        document: true,
+                documents: true,
         faceProfile: true,
-        teachingClasses: {
+        classesAsLecturer: {
           include: {
             location: true,
             _count: {
@@ -53,15 +52,14 @@ export async function GET(
             }
           }
         },
-        enrolledClasses: {
+        enrollments: {
           include: {
             class: {
               include: {
                 lecturer: {
                   select: {
-                    firstName: true,
-                    lastName: true
-                  }
+                    name: true,
+                                      }
                 },
                 location: true
               }
@@ -78,7 +76,7 @@ export async function GET(
             }
           },
           orderBy: {
-            date: 'desc'
+            timestamp: 'desc'
           },
           take: 10
         }
@@ -95,15 +93,15 @@ export async function GET(
     // Calculate statistics
     const attendanceStats = await prisma.attendance.groupBy({
       by: ['status'],
-      where: { studentId: userId },
+      where: { userId: userId },
       _count: { status: true }
     })
 
     const stats = {
-      totalAttendance: attendanceStats.reduce((sum: number, stat: any) => sum + stat._count.status, 0),
-      present: attendanceStats.find((s: any) => s.status === 'PRESENT')?._count.status || 0,
-      absent: attendanceStats.find((s: any) => s.status === 'ABSENT')?._count.status || 0,
-      late: attendanceStats.find((s: any) => s.status === 'LATE')?._count.status || 0,
+      totalAttendance: attendanceStats.reduce((sum: number, stat: any) => sum + (stat._count?.status || 0), 0),
+      present: attendanceStats.find((s: any) => s.status === 'PRESENT')?._count?.status || 0,
+      absent: attendanceStats.find((s: any) => s.status === 'ABSENT')?._count?.status || 0,
+      late: attendanceStats.find((s: any) => s.status === 'LATE')?._count?.status || 0,
     }
 
     const response = {
@@ -157,7 +155,7 @@ export async function PUT(
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },
-      include: { profile: true }
+      include: { faceProfile: true }
     })
 
     if (!existingUser) {
@@ -183,29 +181,11 @@ export async function PUT(
       }
     }
 
-    // Update user and profile
+    // Update user
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
-        ...validatedData,
-        profile: existingUser.profile ? {
-          update: {
-            dateOfBirth: validatedData.dateOfBirth,
-            address: validatedData.address,
-            emergencyContact: validatedData.emergencyContact,
-            bio: validatedData.bio
-          }
-        } : {
-          create: {
-            dateOfBirth: validatedData.dateOfBirth,
-            address: validatedData.address,
-            emergencyContact: validatedData.emergencyContact,
-            bio: validatedData.bio
-          }
-        }
-      },
-      include: {
-        profile: true
+        ...validatedData
       }
     })
 
@@ -262,8 +242,8 @@ export async function DELETE(
       where: { id: userId },
       include: {
         attendances: true,
-        teachingClasses: true,
-        enrolledClasses: true
+        classesAsLecturer: true,
+        enrollments: true
       }
     })
 
@@ -276,17 +256,15 @@ export async function DELETE(
 
     // Check if user has data that prevents deletion
     const hasData = existingUser.attendances.length > 0 || 
-                   existingUser.teachingClasses.length > 0 ||
-                   existingUser.enrolledClasses.length > 0
+                   existingUser.classesAsLecturer.length > 0 ||
+                   existingUser.enrollments.length > 0
 
     if (hasData) {
       // Soft delete - deactivate account
       await prisma.user.update({
         where: { id: userId },
         data: {
-          status: 'SUSPENDED',
-          suspendedAt: new Date(),
-          suspendedBy: user.id
+          status: 'SUSPENDED'
         }
       })
 
@@ -298,7 +276,6 @@ export async function DELETE(
 
     // Hard delete if no associated data
     await prisma.$transaction([
-      prisma.userProfile.deleteMany({ where: { userId } }),
       prisma.document.deleteMany({ where: { userId } }),
       prisma.faceProfile.deleteMany({ where: { userId } }),
       prisma.user.delete({ where: { id: userId } })

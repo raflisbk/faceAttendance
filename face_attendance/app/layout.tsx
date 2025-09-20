@@ -1,20 +1,22 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import type { Metadata, Viewport } from 'next'
+import { Inter, Kalam } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
 import { Toaster } from '@/components/ui/toaster'
-import { AuthGuard } from '@/components/auth/AuthGuard'
 import { cn } from '@/lib/utils'
 
 const inter = Inter({ subsets: ['latin'] })
+const kalam = Kalam({
+  subsets: ['latin'],
+  weight: ['300', '400', '700'],
+  variable: '--font-chalk'
+})
 
 export const metadata: Metadata = {
   title: 'Face Attendance System',
   description: 'Advanced face recognition attendance system for educational institutions',
   keywords: 'face recognition, attendance, education, biometric, AI',
   authors: [{ name: 'Face Attendance Team' }],
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
-  themeColor: '#0f172a',
   manifest: '/manifest.json',
   icons: {
     icon: '/favicon.ico',
@@ -26,6 +28,17 @@ export const metadata: Metadata = {
     type: 'website',
     siteName: 'Face Attendance System',
   },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#0f172a' },
+  ],
 }
 
 export default function RootLayout({
@@ -43,12 +56,12 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
-      <body className={cn(inter.className, "antialiased bg-slate-950 text-white")}>
+      <body className={cn(inter.className, kalam.variable, "antialiased blackboard-bg chalk-text")}>
         <Providers>
           <Toaster>
-            <AuthGuard>
+            <div className="animate-fade-in">
               {children}
-            </AuthGuard>
+            </div>
           </Toaster>
         </Providers>
       </body>

@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       whereClause.OR = [
         { name: { contains: search, mode: 'insensitive' } },
         { building: { contains: search, mode: 'insensitive' } },
-        { wifiSSID: { contains: search, mode: 'insensitive' } }
+        { wifiSsid: { contains: search, mode: 'insensitive' } }
       ]
     }
 
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
               id: true,
               name: true,
               code: true,
-              status: true
+              isActive: true
             }
           },
           _count: {
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
 
     // Check if WiFi SSID already exists
     const existingWiFi = await prisma.location.findFirst({
-      where: { wifiSSID: validatedData.wifiSSID }
+      where: { wifiSsid: validatedData.wifiSsid }
     })
 
     if (existingWiFi) {
@@ -147,8 +147,7 @@ export async function POST(request: NextRequest) {
     const newLocation = await prisma.location.create({
       data: {
         ...validatedData,
-        createdBy: user.id,
-        status: 'ACTIVE'
+        isActive: true
       }
     })
 

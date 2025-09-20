@@ -287,4 +287,3 @@ export async function uploadDocument(
 }
 
 export { CloudinaryService, MockCloudinaryService }
-export type { CloudinaryUploadResult, UploadOptions }

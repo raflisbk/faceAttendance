@@ -10,19 +10,10 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
-  ...compat.extends("next/core-web-vitals"),
+  ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
     files: ["**/*.{js,jsx,ts,tsx}"],
     rules: {
-      "@typescript-eslint/no-unused-vars": [
-        "error",
-        {
-          argsIgnorePattern: "^_",
-          varsIgnorePattern: "^_",
-        },
-      ],
-      "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/no-require-imports": "off",
       "react/no-unescaped-entities": "off",
       "prefer-const": "error",
       "no-var": "error",
@@ -32,13 +23,13 @@ const eslintConfig = [
           allow: ["warn", "error"],
         },
       ],
+      "@next/next/no-img-element": "off",
     },
   },
   {
     files: ["*.config.{js,ts,mjs}", "tailwind.config.ts"],
     rules: {
-      "@typescript-eslint/no-require-imports": "off",
-      "@typescript-eslint/no-explicit-any": "off",
+      "no-undef": "off",
     },
   },
 ];

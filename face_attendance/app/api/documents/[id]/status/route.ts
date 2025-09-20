@@ -31,15 +31,8 @@ export async function GET(
       include: {
         user: {
           select: {
-            firstName: true,
-            lastName: true,
+            name: true,
             email: true
-          }
-        },
-        verifiedByUser: {
-          select: {
-            firstName: true,
-            lastName: true
           }
         }
       }
@@ -64,19 +57,18 @@ export async function GET(
       success: true,
       data: {
         id: document.id,
-        type: document.type,
-        number: document.number,
+        type: document.documentType,
+        fileName: document.fileName,
         status: document.status,
-        uploadedAt: document.uploadedAt,
+        uploadedAt: document.createdAt,
         verifiedAt: document.verifiedAt,
-        verifiedBy: document.verifiedByUser ? 
-          `${document.verifiedByUser.firstName} ${document.verifiedByUser.lastName}` : null,
-        verificationNotes: document.verificationNotes,
-        ocrConfidence: document.ocrConfidence,
-        autoVerified: document.autoVerified,
-        expiryDate: document.expiryDate,
+        verifiedBy: document.verifiedById,
+        fileSize: document.fileSize,
+        mimeType: document.mimeType,
+        ocrData: document.ocrData,
+        rejectionReason: document.rejectionReason,
         // Only show URL to document owner or admin
-        url: (user.role === 'ADMIN' || document.userId === user.id) ? document.url : null
+        filePath: (user.role === 'ADMIN' || document.userId === user.id) ? document.filePath : null
       }
     }
 

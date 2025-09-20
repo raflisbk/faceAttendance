@@ -24,8 +24,8 @@ export async function DELETE(
       include: {
         user: {
           select: {
-            firstName: true,
-            lastName: true
+            name: true,
+            email: true
           }
         }
       }
@@ -49,9 +49,9 @@ export async function DELETE(
     // Check if face profile is being used for active attendance
     const recentAttendance = await prisma.attendance.findFirst({
       where: {
-        studentId: faceProfile.userId,
+        userId: faceProfile.userId,
         method: 'FACE_RECOGNITION',
-        date: {
+        timestamp: {
           gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
         }
       }
@@ -66,8 +66,8 @@ export async function DELETE(
 
     // Delete face profile and related data
     await prisma.$transaction([
-      prisma.faceVerificationLog.deleteMany({
-        where: { faceProfileId }
+      prisma.faceQualityLog.deleteMany({
+        where: { userId: faceProfile.userId }
       }),
       prisma.faceProfile.delete({
         where: { id: faceProfileId }

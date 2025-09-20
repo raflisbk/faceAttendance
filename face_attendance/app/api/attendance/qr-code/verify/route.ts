@@ -48,9 +48,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user is enrolled in the class
-    const enrollment = await prisma.classEnrollment.findFirst({
+    const enrollment = await prisma.enrollment.findFirst({
       where: {
-        studentId: user.id,
+        userId: user.id,
         classId: classId
       }
     })
@@ -66,9 +66,9 @@ export async function POST(request: NextRequest) {
     const today = new Date()
     const existingAttendance = await prisma.attendance.findFirst({
       where: {
-        studentId: user.id,
+        userId: user.id,
         classId: classId,
-        date: {
+        timestamp: {
           gte: new Date(today.getFullYear(), today.getMonth(), today.getDate()),
           lt: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1)
         }
@@ -85,13 +85,12 @@ export async function POST(request: NextRequest) {
     // Record attendance via QR code
     const attendance = await prisma.attendance.create({
       data: {
-        studentId: user.id,
+        userId: user.id,
         classId: classId,
-        date: new Date(),
+        timestamp: new Date(),
         status: 'PRESENT',
         checkInTime: new Date(),
-        method: 'QR_CODE',
-        qrSessionToken: sessionToken
+        method: 'QR_CODE'
       },
       include: {
         class: {

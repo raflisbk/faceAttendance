@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authMiddleware } from '@/lib/auth-middleware'
 import { checkInSchema } from '@/lib/validations'
-import { verifyFaceRecognition } from '@/lib/face-recognition'
+// Import server-safe face recognition
+import { verifyFaceRecognition } from '@/lib/face-recognition-server'
 import { validateWifiLocation } from '@/lib/wifi-validation'
 import { prisma } from '@/lib/prisma'
 import { redis } from '@/lib/redis'
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
     const {
       classId,
       faceImage,
-      wifiSSID,
+      wifiSsid,
       coordinates,
       method = 'FACE_RECOGNITION'
     } = validatedData
@@ -119,7 +120,7 @@ export async function POST(request: NextRequest) {
     }
 
     // WiFi location validation
-    if (wifiSSID) {
+    if (wifiSsid) {
       const validCoordinates = coordinates ? {
         latitude: coordinates.latitude,
         longitude: coordinates.longitude,
@@ -127,7 +128,7 @@ export async function POST(request: NextRequest) {
       } : undefined
 
       wifiValidationResult = await validateWifiLocation(
-        wifiSSID,
+        wifiSsid,
         classSession.location?.wifiSsid || '',
         validCoordinates
       )
@@ -151,7 +152,7 @@ export async function POST(request: NextRequest) {
         timestamp: currentTime,
         method: method as any,
         confidenceScore: confidence,
-        wifiSsid: wifiSSID || null,
+        wifiSsid: wifiSsid || null,
         gpsCoordinates: coordinates ? coordinates as any : null,
         deviceInfo: {
           faceVerification: faceVerificationResult,

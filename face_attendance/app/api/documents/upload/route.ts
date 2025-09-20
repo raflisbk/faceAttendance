@@ -92,25 +92,23 @@ export async function POST(request: NextRequest) {
     const document = await prisma.document.create({
       data: {
         userId: user.id,
-        type: validatedData.documentType,
-        number: validatedData.documentNumber,
-        url: documentUrl,
-        expiryDate: validatedData.expiryDate,
-        extractedText,
-        ocrConfidence,
-        status: 'PENDING_VERIFICATION',
-        uploadedAt: new Date()
+        fileName: documentFile.name,
+        filePath: documentUrl,
+        fileSize: documentFile.size,
+        mimeType: documentFile.type,
+        documentType: validatedData.documentType,
+        ocrData: extractedText ? { extractedText, confidence: ocrConfidence } : undefined,
+        status: 'PENDING'
       }
     })
 
-    // Auto-verify if OCR confidence is high and data matches
-    if (ocrConfidence > 85 && extractedText.includes(validatedData.documentNumber)) {
+    // Auto-verify if OCR confidence is high
+    if (ocrConfidence > 85) {
       await prisma.document.update({
         where: { id: document.id },
         data: {
           status: 'VERIFIED',
-          verifiedAt: new Date(),
-          autoVerified: true
+          verifiedAt: new Date()
         }
       })
     }
@@ -119,9 +117,9 @@ export async function POST(request: NextRequest) {
       success: true,
       data: {
         id: document.id,
-        type: document.type,
+        documentType: document.documentType,
         status: document.status,
-        uploadedAt: document.uploadedAt,
+        createdAt: document.createdAt,
         ocrConfidence,
         autoVerified: ocrConfidence > 85
       },

@@ -184,7 +184,7 @@ export function DocumentApproval({
                         </Button>
                         <Button
                           onClick={() => {
-                            const link = document.createElement('a')
+                            const link = window.document.createElement('a')
                             link.href = document.filePath
                             link.download = document.fileName
                             link.click()

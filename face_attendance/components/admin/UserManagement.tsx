@@ -61,10 +61,10 @@ export function UserManagement() {
       })
 
       const response = await ApiClient.get(`/api/admin/users?${params}`)
-      setUsers(response.data.users)
-      setTotalPages(response.data.pagination.totalPages)
+      setUsers((response.data as any).users)
+      setTotalPages((response.data as any).pagination.totalPages)
     } catch (error) {
-      toast.showError('Failed to load users')
+      toast.error('Failed to load users')
     } finally {
       setIsLoading(false)
     }
@@ -74,9 +74,9 @@ export function UserManagement() {
     try {
       await ApiClient.patch(`/api/admin/users/${userId}`, { status: newStatus })
       await loadUsers()
-      toast.showSuccess('User status updated successfully')
+      toast.success('User status updated successfully')
     } catch (error) {
-      toast.showError('Failed to update user status')
+      toast.error('Failed to update user status')
     }
   }
 

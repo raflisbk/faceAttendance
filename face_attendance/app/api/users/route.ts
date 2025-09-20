@@ -41,11 +41,10 @@ export async function GET(request: NextRequest) {
 
     if (search) {
       whereClause.OR = [
-        { firstName: { contains: search, mode: 'insensitive' } },
-        { lastName: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search, mode: 'insensitive' } },
         { email: { contains: search, mode: 'insensitive' } },
         { studentId: { contains: search, mode: 'insensitive' } },
-        { employeeId: { contains: search, mode: 'insensitive' } }
+        { staffId: { contains: search, mode: 'insensitive' } }
       ]
     }
 
@@ -66,21 +65,20 @@ export async function GET(request: NextRequest) {
       prisma.user.findMany({
         where: whereClause,
         include: {
-          profile: true,
-          document: true,
           faceProfile: {
             select: {
               id: true,
               status: true,
-              quality: true,
-              enrolledAt: true
+              qualityScore: true,
+              createdAt: true
             }
           },
+          documents: true,
           _count: {
             select: {
               attendances: true,
-              teachingClasses: true,
-              enrolledClasses: true
+              classesAsLecturer: true,
+              enrollments: true
             }
           }
         },
@@ -159,7 +157,7 @@ export async function POST(request: NextRequest) {
 
     if (validatedData.employeeId) {
       const existingEmployee = await prisma.user.findFirst({
-        where: { employeeId: validatedData.employeeId }
+        where: { staffId: validatedData.employeeId }
       })
       if (existingEmployee) {
         return NextResponse.json(
@@ -183,26 +181,16 @@ export async function POST(request: NextRequest) {
       data: {
         email: validatedData.email,
         password: hashedPassword,
-        firstName: validatedData.firstName,
-        lastName: validatedData.lastName,
-        phoneNumber: validatedData.phone,
+        name: `${validatedData.firstName} ${validatedData.lastName}`,
+        phone: validatedData.phone,
         role: validatedData.role,
         studentId: validatedData.studentId,
-        employeeId: validatedData.employeeId,
-        department: validatedData.department,
+        staffId: validatedData.employeeId,
         status: 'ACTIVE',
-        emailVerified: true,
-        createdBy: user.id,
-        profile: {
-          create: {
-            dateOfBirth: validatedData.dateOfBirth,
-            address: validatedData.address,
-            emergencyContact: validatedData.emergencyContact
-          }
-        }
+        emailVerified: new Date()
       },
       include: {
-        profile: true
+        faceProfile: true
       }
     })
 

@@ -31,7 +31,7 @@ export async function POST(
       )
     }
 
-    if (userToReject.status !== 'PENDING_APPROVAL') {
+    if (userToReject.status !== 'PENDING') {
       return NextResponse.json(
         { error: 'User is not pending approval' },
         { status: 400 }
@@ -41,15 +41,12 @@ export async function POST(
     await prisma.user.update({
       where: { id: userId },
       data: {
-        status: 'REJECTED',
-        rejectedAt: new Date(),
-        rejectedBy: user.id,
-        rejectionReason: reason
+        status: 'REJECTED'
       }
     })
 
     // Send rejection email
-    await sendRejectionEmail(userToReject.email, userToReject.firstName, reason)
+    await sendRejectionEmail(userToReject.email, userToReject.name || 'User', reason)
 
     return NextResponse.json({
       success: true,

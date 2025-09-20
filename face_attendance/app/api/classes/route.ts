@@ -248,10 +248,10 @@ export async function POST(request: NextRequest) {
         locationId: validatedData.locationId,
         isActive: true,
         schedule: {
-          dayOfWeek: validatedData.schedule?.dayOfWeek || [],
+          dayOfWeek: validatedData.schedule?.dayOfWeek,
           startTime: validatedData.schedule?.startTime,
           endTime: validatedData.schedule?.endTime,
-          timeSlots: validatedData.schedule?.timeSlots || []
+          duration: validatedData.schedule?.duration
         }
       },
       include: {

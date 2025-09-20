@@ -19,19 +19,20 @@ export function AuthGuard({
   fallback
 }: AuthGuardProps) {
   const router = useRouter()
-  const { user, isLoading, checkAuth } = useAuthStore()
+  const { user, isLoading, isAuthenticated } = useAuthStore()
   const [isChecking, setIsChecking] = useState(true)
 
   useEffect(() => {
     const initAuth = async () => {
-      if (!user && !isLoading) {
-        await checkAuth()
+      if (!isAuthenticated && !isLoading) {
+        router.push('/auth/login')
+        return
       }
       setIsChecking(false)
     }
 
     initAuth()
-  }, [user, isLoading, checkAuth])
+  }, [user, isLoading, isAuthenticated, router])
 
   // Show loading spinner while checking authentication
   if (isLoading || isChecking) {

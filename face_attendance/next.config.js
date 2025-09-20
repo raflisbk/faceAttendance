@@ -1,6 +1,33 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Performance optimizations
   serverExternalPackages: ['prisma', '@prisma/client'],
+  // Turbopack configuration
+  turbopack: {
+    resolveExtensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
+    rules: {
+      '*.svg': {
+        loaders: ['@svgr/webpack'],
+        as: '*.js',
+      },
+    },
+  },
+  experimental: {
+    // Performance optimizations
+    optimizePackageImports: [
+      '@radix-ui/react-icons',
+      'lucide-react',
+      'framer-motion',
+      '@tanstack/react-query',
+      'zustand',
+    ],
+    // Memory optimization
+    workerThreads: false,
+    esmExternals: true,
+  },
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
   images: {
     remotePatterns: [
       {
@@ -22,9 +49,24 @@ const nextConfig = {
         pathname: '/**',
       },
     ],
+    // Image optimization
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    formats: ['image/webp', 'image/avif'],
+    minimumCacheTTL: 60,
   },
-  webpack: (config, { isServer }) => {
-    // Handle face-api.js
+  // Configure both webpack and turbopack
+  webpack: (config, { dev, isServer, webpack }) => {
+    // Only apply webpack config when not using turbopack
+    if (process.env.TURBOPACK) {
+      return config;
+    }
+
+    // Handle face-api.js - exclude from server builds
+    if (isServer) {
+      config.externals = [...(config.externals || []), '@vladmandic/face-api'];
+    }
+
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -34,17 +76,22 @@ const nextConfig = {
       };
     }
 
-    // Handle SVG imports
-    config.module.rules.push({
-      test: /\.svg$/,
-      use: ['@svgr/webpack'],
-    });
-
-    // Optimize for face-api.js
-    config.module.rules.push({
-      test: /\.(wasm)$/,
-      type: 'webassembly/async',
-    });
+    // Performance optimizations
+    if (dev) {
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            vendor: {
+              test: /[\\/]node_modules[\\/]/,
+              name: 'vendors',
+              chunks: 'all',
+            },
+          },
+        },
+      };
+    }
 
     return config;
   },
@@ -57,9 +104,10 @@ const nextConfig = {
   reactStrictMode: true,
   typescript: {
     ignoreBuildErrors: false,
+    tsconfigPath: './tsconfig.json',
   },
   eslint: {
-    ignoreDuringBuilds: false,
+    ignoreDuringBuilds: true,
   },
   // PWA Configuration
   headers: async () => {

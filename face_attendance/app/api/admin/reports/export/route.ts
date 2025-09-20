@@ -135,7 +135,12 @@ export async function GET(request: NextRequest) {
         startDate: startDate ? new Date(startDate) : null,
         endDate: endDate ? new Date(endDate) : null
       },
-      generatedBy: user
+      generatedBy: {
+        id: user.id,
+        name: user.name || 'Unknown User',
+        email: user.email,
+        role: user.role
+      }
     })
 
     // Set response headers for file download
@@ -375,7 +380,12 @@ export async function POST(request: NextRequest) {
             startDate: startDateObj,
             endDate: endDateObj
           },
-          generatedBy: user
+          generatedBy: {
+        id: user.id,
+        name: user.name || 'Unknown User',
+        email: user.email,
+        role: user.role
+      }
         })
         break
     }

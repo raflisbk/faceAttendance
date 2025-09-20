@@ -1,5 +1,4 @@
 import type { Config } from "tailwindcss";
-import { blackboardPlugin } from "./lib/tailwind-plugin";
 
 const config: Config = {
   darkMode: ["class"],
@@ -53,23 +52,16 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        chalk: {
-          50: "#fafafa",
-          100: "#f4f4f5",
-          200: "#e4e4e7",
-          300: "#d4d4d8",
-          400: "#a1a1aa",
-          500: "#71717a",
-          600: "#52525b",
-          700: "#3f3f46",
-          800: "#27272a",
-          900: "#18181b",
-          950: "#09090b",
+        // Enterprise theme colors
+        whiteboard: {
+          DEFAULT: "hsl(var(--whiteboard))",
+          dark: "hsl(var(--whiteboard-dark))",
         },
-        blackboard: {
-          DEFAULT: "#1a1a1a",
-          light: "#2d2d2d",
-          dark: "#0f0f0f",
+        marker: {
+          blue: "hsl(var(--marker-blue))",
+          red: "hsl(var(--marker-red))",
+          green: "hsl(var(--marker-green))",
+          orange: "hsl(var(--marker-orange))",
         },
       },
       borderRadius: {
@@ -77,74 +69,125 @@ const config: Config = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
-      keyframes: {
-        "accordion-down": {
-          from: { height: "0" },
-          to: { height: "var(--radix-accordion-content-height)" },
-        },
-        "accordion-up": {
-          from: { height: "var(--radix-accordion-content-height)" },
-          to: { height: "0" },
-        },
-        "fade-in": {
-          "0%": { opacity: "0", transform: "translateY(10px)" },
-          "100%": { opacity: "1", transform: "translateY(0)" },
-        },
-        "slide-in": {
-          "0%": { transform: "translateX(-100%)" },
-          "100%": { transform: "translateX(0)" },
-        },
-        "chalk-write": {
-          "0%": { strokeDashoffset: "1000" },
-          "100%": { strokeDashoffset: "0" },
-        },
-        "dust-fall": {
-          "0%": { transform: "translateY(-10px)", opacity: "1" },
-          "100%": { transform: "translateY(10px)", opacity: "0" },
-        },
-        "glow": {
-          "0%, 100%": { opacity: "1" },
-          "50%": { opacity: "0.7" },
-        },
-      },
-      animation: {
-        "accordion-down": "accordion-down 0.2s ease-out",
-        "accordion-up": "accordion-up 0.2s ease-out",
-        "fade-in": "fade-in 0.5s ease-out",
-        "slide-in": "slide-in 0.3s ease-out",
-        "chalk-write": "chalk-write 2s ease-out",
-        "dust-fall": "dust-fall 1s ease-out infinite",
-        "glow": "glow 2s ease-in-out infinite",
-      },
       fontFamily: {
-        chalk: ["Kalam", "cursive"],
-        mono: ["Fira Code", "JetBrains Mono", "monospace"],
-      },
-      backgroundImage: {
-        "blackboard-texture": `
-          radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
-          radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 50%),
-          radial-gradient(circle at 40% 40%, rgba(120, 119, 198, 0.05) 0%, transparent 50%)
-        `,
-        "chalk-dust": `
-          radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 20%),
-          radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.08) 0%, transparent 30%),
-          radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.05) 0%, transparent 20%)
-        `,
+        sans: ["Inter", "system-ui", "sans-serif"],
+        mono: ["JetBrains Mono", "Menlo", "Monaco", "monospace"],
+        kalam: ["Kalam", "cursive"],
+        caveat: ["Caveat", "cursive"],
+        architects: ["Architects Daughter", "cursive"],
       },
       boxShadow: {
-        "chalk": "0 0 10px rgba(255, 255, 255, 0.2), inset 0 0 10px rgba(255, 255, 255, 0.1)",
-        "blackboard": "inset 0 0 20px rgba(0, 0, 0, 0.5)",
-        "eraser": "0 4px 20px rgba(0, 0, 0, 0.3)",
+        soft: "var(--shadow-soft)",
+        medium: "var(--shadow-medium)",
+        large: "var(--shadow-large)",
       },
-      textShadow: {
-        "chalk": "0 0 5px rgba(255, 255, 255, 0.5)",
-        "glow": "0 0 10px currentColor",
+      animation: {
+        "fade-in": "fade-in 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
+        "slide-up": "slide-up 1s cubic-bezier(0.4, 0, 0.2, 1)",
+        "scale-in": "scale-in 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
+        "chalk-write": "chalk-write 1.2s cubic-bezier(0.4, 0, 0.2, 1)",
+        "glow-pulse": "glow-pulse 2s ease-in-out infinite",
+      },
+      keyframes: {
+        "fade-in": {
+          "0%": { opacity: "0", transform: "translateY(20px)", filter: "blur(4px)" },
+          "100%": { opacity: "1", transform: "translateY(0)", filter: "blur(0)" },
+        },
+        "slide-up": {
+          "0%": { opacity: "0", transform: "translateY(40px) scale(0.95)" },
+          "100%": { opacity: "1", transform: "translateY(0) scale(1)" },
+        },
+        "scale-in": {
+          "0%": { opacity: "0", transform: "scale(0.8) rotate(-2deg)", filter: "blur(2px)" },
+          "100%": { opacity: "1", transform: "scale(1) rotate(0deg)", filter: "blur(0)" },
+        },
+        "chalk-write": {
+          "0%": { opacity: "0", transform: "translateX(-20px) rotate(-5deg)", filter: "blur(2px)" },
+          "50%": { opacity: "0.7", transform: "translateX(0) rotate(0deg)", filter: "blur(1px)" },
+          "100%": { opacity: "1", transform: "translateX(0) rotate(0deg)", filter: "blur(0)" },
+        },
+        "glow-pulse": {
+          "0%, 100%": { textShadow: "0 0 5px rgba(100, 255, 180, 0.5), 0 0 10px rgba(100, 255, 180, 0.3)" },
+          "50%": { textShadow: "0 0 10px rgba(100, 255, 180, 0.8), 0 0 20px rgba(100, 255, 180, 0.5)" },
+        },
+      },
+      backgroundImage: {
+        'grid-pattern': 'linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px)',
+      },
+      backgroundSize: {
+        'grid-sm': '16px 16px',
+        'grid-md': '24px 24px',
+        'grid-lg': '32px 32px',
       },
     },
   },
   plugins: [
-    blackboardPlugin,
+    require("tailwindcss-animate"),
+    // Custom plugin for enterprise utilities
+    function({ addUtilities, theme }: any) {
+      const newUtilities = {
+        '.shadow-soft': {
+          'box-shadow': 'var(--shadow-soft)',
+        },
+        '.shadow-medium': {
+          'box-shadow': 'var(--shadow-medium)',
+        },
+        '.shadow-large': {
+          'box-shadow': 'var(--shadow-large)',
+        },
+        '.bg-whiteboard': {
+          'background-color': 'hsl(var(--whiteboard))',
+        },
+        '.text-marker-blue': {
+          'color': 'hsl(var(--marker-blue))',
+        },
+        '.text-marker-red': {
+          'color': 'hsl(var(--marker-red))',
+        },
+        '.text-marker-green': {
+          'color': 'hsl(var(--marker-green))',
+        },
+        '.text-marker-orange': {
+          'color': 'hsl(var(--marker-orange))',
+        },
+        '.bg-marker-blue': {
+          'background-color': 'hsl(var(--marker-blue))',
+        },
+        '.bg-marker-red': {
+          'background-color': 'hsl(var(--marker-red))',
+        },
+        '.bg-marker-green': {
+          'background-color': 'hsl(var(--marker-green))',
+        },
+        '.bg-marker-orange': {
+          'background-color': 'hsl(var(--marker-orange))',
+        },
+        '.border-3': {
+          'border-width': '3px',
+        },
+        '.border-4': {
+          'border-width': '4px',
+        },
+        '.blackboard-bg': {
+          'background': 'radial-gradient(circle at 20% 80%, rgba(100, 255, 180, 0.03) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(140, 200, 255, 0.03) 0%, transparent 50%), linear-gradient(135deg, rgb(20, 25, 35) 0%, rgb(28, 35, 47) 100%)',
+        },
+        '.chalk-text': {
+          'font-family': '"Kalam", "Caveat", "Architects Daughter", cursive',
+          'color': 'rgb(248, 252, 254)',
+          'text-shadow': '0 0 10px rgba(100, 255, 180, 0.3)',
+        },
+        '.chalk-glow': {
+          'filter': 'drop-shadow(0 0 8px rgba(100, 255, 180, 0.6))',
+          'transition': 'filter 0.3s ease',
+        },
+        '.glass-effect': {
+          'background': 'rgba(40, 48, 62, 0.1)',
+          'backdrop-filter': 'blur(20px)',
+          'border': '1px solid rgba(248, 252, 254, 0.1)',
+        },
+      }
+      addUtilities(newUtilities)
+    }
   ],
 } satisfies Config;
 

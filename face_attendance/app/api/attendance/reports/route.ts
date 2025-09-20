@@ -92,10 +92,9 @@ export async function GET(request: NextRequest) {
         const detailedRecords = await prisma.attendance.findMany({
           where: whereClause,
           include: {
-            student: {
+            user: {
               select: {
-                firstName: true,
-                lastName: true,
+                name: true,
                 studentId: true
               }
             },
@@ -105,15 +104,14 @@ export async function GET(request: NextRequest) {
                 code: true,
                 lecturer: {
                   select: {
-                    firstName: true,
-                    lastName: true
+                    name: true
                   }
                 }
               }
             }
           },
           orderBy: {
-            date: 'desc'
+            timestamp: 'desc'
           }
         })
 
@@ -129,17 +127,17 @@ export async function GET(request: NextRequest) {
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
         const trendData = await prisma.attendance.groupBy({
-          by: ['date', 'status'],
+          by: ['timestamp', 'status'],
           where: {
             ...whereClause,
-            date: {
+            timestamp: {
               gte: thirtyDaysAgo,
-              ...whereClause.date
+              ...whereClause.timestamp
             }
           },
           _count: { status: true },
           orderBy: {
-            date: 'asc'
+            timestamp: 'asc'
           }
         })
 
@@ -173,7 +171,7 @@ export async function GET(request: NextRequest) {
           where: user.role === 'LECTURER' ? { lecturerId: user.id } : {},
           include: {
             attendances: {
-              where: whereClause.date ? { date: whereClause.date } : {}
+              where: whereClause.timestamp ? { timestamp: whereClause.timestamp } : {}
             },
             enrollments: true,
             _count: {

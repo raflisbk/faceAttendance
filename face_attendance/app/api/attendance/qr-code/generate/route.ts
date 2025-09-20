@@ -29,8 +29,7 @@ export async function POST(request: NextRequest) {
         ...(user.role === 'LECTURER' ? { lecturerId: user.id } : {})
       },
       include: {
-        location: true,
-        schedule: true
+        location: true
       }
     })
 
@@ -66,7 +65,7 @@ export async function POST(request: NextRequest) {
     const qrCodeImage = await generateQRCode(JSON.stringify(qrData))
 
     // Log QR generation
-    await prisma.qrCodeSession.create({
+    await prisma.qRCodeSession.create({
       data: {
         sessionToken,
         classId,

@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     // Find user by phone number
     const user = await prisma.user.findFirst({
-      where: { phoneNumber }
+      where: { phone: phoneNumber }
     })
 
     if (!user) {
@@ -46,8 +46,7 @@ export async function POST(request: NextRequest) {
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        phoneVerified: true,
-        phoneVerifiedAt: new Date()
+        phoneVerified: new Date()
       }
     })
 

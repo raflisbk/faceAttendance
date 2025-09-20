@@ -542,7 +542,7 @@ export default function LecturerDashboard() {
                   </Button>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="relative z-10 chalk-particles">
                 <QRCodeGenerator
                   lecturerId={user?.id || ''}
                   userRole="LECTURER"

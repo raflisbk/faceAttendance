@@ -1,4 +1,3 @@
-// app/login/page.tsx
 'use client'
 
 import { useState } from 'react'
@@ -15,16 +14,17 @@ import { useToastHelpers } from '@/components/ui/toast'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { 
-  Eye, 
-  EyeOff, 
-  Mail, 
-  Lock, 
-  LogIn,
-  UserPlus,
-  AlertCircle,
-  ArrowRight
-} from 'lucide-react'
+import {
+  EyeIcon,
+  EyeSlashIcon,
+  EnvelopeIcon,
+  LockClosedIcon,
+  CameraIcon,
+  ExclamationTriangleIcon,
+  ArrowRightIcon,
+  UserPlusIcon,
+  ShieldCheckIcon
+} from '@heroicons/react/24/outline'
 import { cn } from '@/lib/utils'
 import { ApiClient } from '@/lib/api-client'
 import { useAuthStore } from '@/store/auth-store'
@@ -37,7 +37,7 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string>('')
-  
+
   const router = useRouter()
   const toast = useToastHelpers()
   const { login } = useAuthStore()
@@ -117,93 +117,111 @@ export default function LoginPage() {
     await onSubmit(credential)
   }
 
-  return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_0%,_rgba(15,23,42,0.8)_100%)]" />
-      <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:60px_60px]" />
-      
-      <div className="relative w-full max-w-md">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/10 border border-white/20 mb-4">
-            <LogIn className="w-8 h-8 text-white" />
+  if (isLoading) {
+    return (
+      <div className="min-h-screen clean-bg flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 enterprise-card flex items-center justify-center mx-auto mb-4">
+            <LoadingSpinner className="w-6 h-6 text-blue-600" />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">
-            Welcome Back
-          </h1>
-          <p className="text-slate-400">
-            Sign in to your Face Attendance account
-          </p>
+          <p className="text-muted">Authenticating...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen blackboard-bg flex items-center justify-center p-4">
+      <div className="w-full max-w-md space-y-8 animate-slide-up">
+        {/* Header */}
+        <div className="text-center">
+          <div className="flex items-center justify-center space-x-4 mb-8">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-blue-500 shadow-lg border border-green-300/20 flex items-center justify-center hover:shadow-green-400/50 transition-all duration-300">
+              <CameraIcon className="w-4 h-4 text-white" />
+            </div>
+            <div className="text-left">
+              <h1 className="text-3xl font-bold text-green-300 font-kalam animate-pulse">FaceAttend</h1>
+              <p className="text-sm text-blue-300 font-caveat">Enterprise Blackboard</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <h2 className="text-4xl font-bold text-green-200 font-caveat">Welcome Back</h2>
+            <p className="text-blue-200 font-kalam italic">
+              Sign in to access your digital blackboard
+            </p>
+          </div>
         </div>
 
-        <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-sm">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center text-white">
-              Sign In
-            </CardTitle>
+        {/* Login Form */}
+        <Card className="enterprise-card">
+          <CardHeader className="text-center">
+            <CardTitle className="text-xl text-gray-900">Sign In</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+
+          <CardContent className="space-y-6">
             {error && (
-              <Alert variant="destructive" className="bg-red-900/50 border-red-800 text-red-200">
-                <AlertCircle className="h-4 w-4" />
+              <Alert className="status-error">
+                <ExclamationTriangleIcon className="h-5 w-5" />
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               {/* Email Field */}
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-slate-200">
+                <Label htmlFor="email" className="text-sm font-medium text-gray-700">
                   Email Address
                 </Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                  <EnvelopeIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <Input
                     id="email"
                     type="email"
                     placeholder="Enter your email"
                     className={cn(
-                      "pl-10 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-400",
-                      "focus:border-slate-600 focus:ring-slate-600",
-                      errors.email && "border-red-500 focus:border-red-500 focus:ring-red-500"
+                      "input-field pl-10",
+                      errors.email && "border-red-300 focus:border-red-500 focus:ring-red-500"
                     )}
                     {...register('email')}
                   />
                 </div>
                 {errors.email && (
-                  <p className="text-sm text-red-400">{errors.email.message}</p>
+                  <p className="text-sm text-red-600">{errors.email.message}</p>
                 )}
               </div>
 
               {/* Password Field */}
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-slate-200">
+                <Label htmlFor="password" className="text-sm font-medium text-gray-700">
                   Password
                 </Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                  <LockClosedIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Enter your password"
                     className={cn(
-                      "pl-10 pr-10 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-400",
-                      "focus:border-slate-600 focus:ring-slate-600",
-                      errors.password && "border-red-500 focus:border-red-500 focus:ring-red-500"
+                      "input-field pl-10 pr-10",
+                      errors.password && "border-red-300 focus:border-red-500 focus:ring-red-500"
                     )}
                     {...register('password')}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-300"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPassword ? (
+                      <EyeSlashIcon className="w-5 h-5" />
+                    ) : (
+                      <EyeIcon className="w-5 h-5" />
+                    )}
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="text-sm text-red-400">{errors.password.message}</p>
+                  <p className="text-sm text-red-600">{errors.password.message}</p>
                 )}
               </div>
 
@@ -214,15 +232,15 @@ export default function LoginPage() {
                     id="remember"
                     checked={rememberMe}
                     onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                    className="border-slate-600 data-[state=checked]:bg-slate-600 data-[state=checked]:border-slate-600"
+                    className="border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <Label htmlFor="remember" className="text-sm text-slate-300">
+                  <Label htmlFor="remember" className="text-sm text-gray-700">
                     Remember me
                   </Label>
                 </div>
-                <Link 
-                  href="/forgot-password" 
-                  className="text-sm text-slate-400 hover:text-slate-300 transition-colors"
+                <Link
+                  href="/forgot-password"
+                  className="text-sm text-blue-600 hover:text-blue-500 font-medium"
                 >
                   Forgot password?
                 </Link>
@@ -232,11 +250,7 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 disabled={!isValid || isLoading}
-                className={cn(
-                  "w-full bg-slate-700 hover:bg-slate-600 text-white",
-                  "disabled:opacity-50 disabled:cursor-not-allowed",
-                  "transition-all duration-200"
-                )}
+                className="btn-primary w-full group"
               >
                 {isLoading ? (
                   <>
@@ -245,8 +259,9 @@ export default function LoginPage() {
                   </>
                 ) : (
                   <>
+                    <ShieldCheckIcon className="w-5 h-5 mr-2" />
                     Sign In
-                    <ArrowRight className="ml-2 w-4 h-4" />
+                    <ArrowRightIcon className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                   </>
                 )}
               </Button>
@@ -255,64 +270,59 @@ export default function LoginPage() {
             {/* Divider */}
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-slate-700" />
+                <span className="w-full border-t border-gray-200" />
               </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-slate-900 px-2 text-slate-400">Demo Accounts</span>
+              <div className="relative flex justify-center text-sm">
+                <span className="bg-white px-4 text-gray-500">Demo Accounts</span>
               </div>
             </div>
 
             {/* Demo Login Buttons */}
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-3">
               <Button
                 type="button"
-                variant="outline"
-                size="sm"
                 onClick={() => handleDemoLogin('ADMIN')}
-                className="bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white text-xs"
+                className="btn-secondary text-sm py-2"
               >
                 Admin
               </Button>
               <Button
                 type="button"
-                variant="outline"
-                size="sm"
                 onClick={() => handleDemoLogin('LECTURER')}
-                className="bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white text-xs"
+                className="btn-secondary text-sm py-2"
               >
                 Lecturer
               </Button>
               <Button
                 type="button"
-                variant="outline"
-                size="sm"
                 onClick={() => handleDemoLogin('STUDENT')}
-                className="bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white text-xs"
+                className="btn-secondary text-sm py-2"
               >
                 Student
               </Button>
             </div>
 
             {/* Sign Up Link */}
-            <div className="text-center pt-4">
-              <p className="text-slate-400 text-sm">
+            <div className="text-center pt-4 border-t border-gray-100">
+              <p className="text-sm text-gray-600">
                 Don't have an account?{' '}
-                <Link 
-                  href="/register" 
-                  className="text-slate-300 hover:text-white font-medium transition-colors inline-flex items-center"
+                <Link
+                  href="/register"
+                  className="text-blue-600 hover:text-blue-500 font-medium inline-flex items-center"
                 >
-                  Sign up here
-                  <UserPlus className="ml-1 w-4 h-4" />
+                  Create account
+                  <UserPlusIcon className="ml-1 w-4 h-4" />
                 </Link>
               </p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Footer */}
-        <div className="text-center mt-8">
-          <p className="text-slate-500 text-sm">
-            Secure face recognition attendance system
+        {/* Security Notice */}
+        <div className="text-center">
+          <p className="text-sm text-gray-500">
+            <ShieldCheckIcon className="w-4 h-4 inline mr-1" />
+            Secured with enterprise-grade encryption
           </p>
         </div>
       </div>

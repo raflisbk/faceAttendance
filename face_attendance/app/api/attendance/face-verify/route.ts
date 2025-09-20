@@ -1,7 +1,7 @@
 // app/api/attendance/face-verify/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { authMiddleware } from '@/lib/auth-middleware'
-import { verifyFaceRecognition } from '@/lib/face-recognition'
+import { verifyFaceRecognition } from '@/lib/face-recognition-server'
 import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {

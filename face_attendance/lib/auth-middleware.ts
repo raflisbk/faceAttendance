@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server'
 import { JWTManager } from '@/lib/encryption'
 import { prisma } from '@/lib/prisma'
-import { User } from '@/lib/auth'
 
 /**
  * Authentication middleware for API routes
@@ -11,10 +10,9 @@ import { User } from '@/lib/auth'
 export interface AuthenticatedUser {
   id: string;
   email: string;
-  name: string;
-  role: 'ADMIN' | 'LECTURER' | 'STUDENT';
+  name: string | null;
+  role: 'ADMIN' | 'LECTURER' | 'STUDENT' | 'SUPER_ADMIN';
   status: string;
-  avatar?: string;
   emailVerified: boolean;
   phoneVerified: boolean;
   registrationStep: number;
@@ -55,7 +53,6 @@ export async function authMiddleware(request: NextRequest): Promise<Authenticate
         name: true,
         role: true,
         status: true,
-        avatar: true,
         emailVerified: true,
         phoneVerified: true,
         registrationStep: true,
@@ -90,7 +87,7 @@ export async function authMiddleware(request: NextRequest): Promise<Authenticate
  */
 export async function requireRole(
   request: NextRequest,
-  requiredRole: 'ADMIN' | 'LECTURER' | 'STUDENT'
+  requiredRole: 'ADMIN' | 'LECTURER' | 'STUDENT' | 'SUPER_ADMIN'
 ): Promise<AuthenticatedUser | null> {
   const user = await authMiddleware(request);
 
@@ -127,7 +124,7 @@ export async function requireStudent(request: NextRequest): Promise<Authenticate
  */
 export async function requireAnyRole(
   request: NextRequest,
-  allowedRoles: Array<'ADMIN' | 'LECTURER' | 'STUDENT'>
+  allowedRoles: Array<'ADMIN' | 'LECTURER' | 'STUDENT' | 'SUPER_ADMIN'>
 ): Promise<AuthenticatedUser | null> {
   const user = await authMiddleware(request);
 
@@ -206,14 +203,14 @@ export function getClientIP(request: NextRequest): string {
   const real = request.headers.get('x-real-ip');
 
   if (forwarded) {
-    return forwarded.split(',')[0].trim();
+    return forwarded.split(',')[0]?.trim() || 'unknown';
   }
 
   if (real) {
     return real.trim();
   }
 
-  return request.ip || 'unknown';
+  return 'unknown';
 }
 
 /**

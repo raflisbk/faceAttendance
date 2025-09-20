@@ -49,6 +49,9 @@ model User {
   image                  String?
   phone                  String?                 @unique
   phoneVerified          DateTime?               @map("phone_verified")
+  password               String?                 // For authentication
+  avatar                 String?                 // Profile picture URL
+  registrationStep       Int                     @default(1) @map("registration_step")
   studentId              String?                 @unique @map("student_id")
   staffId                String?                 @unique @map("staff_id")
   role                   UserRole                @default(STUDENT)
@@ -68,6 +71,7 @@ model User {
   accounts               Account[]
   sessions               Session[]
   faceProfile            FaceProfile?
+  documents              Document[]              @relation("UserDocuments")
   documentVerifications  DocumentVerification[]
   registrationSteps      RegistrationStep[]
   userApprovals          UserApproval[]
@@ -90,15 +94,19 @@ model VerificationToken {
 }
 
 model FaceProfile {
-  id                   String   @id @default(cuid())
-  userId               String   @unique @map("user_id")
-  faceDescriptors      Json     @map("face_descriptors")
-  qualityScore         Float    @map("quality_score")
-  confidenceThreshold  Float    @default(0.6) @map("confidence_threshold")
-  enrollmentImages     Json     @map("enrollment_images")
-  antiSpoofingData     Json?    @map("anti_spoofing_data")
-  createdAt            DateTime @default(now()) @map("created_at")
-  updatedAt            DateTime @updatedAt @map("updated_at")
+  id                   String                  @id @default(cuid())
+  userId               String                  @unique @map("user_id")
+  faceDescriptors      Json                    @map("face_descriptors")
+  descriptors          Json?                   // Alternative field name used in code
+  images               Json?                   // Enrollment images array
+  qualityScore         Float                   @map("quality_score")
+  confidenceThreshold  Float                   @default(0.6) @map("confidence_threshold")
+  enrollmentImages     Json                    @map("enrollment_images")
+  antiSpoofingData     Json?                   @map("anti_spoofing_data")
+  status               FaceEnrollmentStatus    @default(NOT_ENROLLED)
+  lastUpdated          DateTime?               @map("last_updated")
+  createdAt            DateTime                @default(now()) @map("created_at")
+  updatedAt            DateTime                @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -119,10 +127,11 @@ model Class {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  lecturer    User         @relation("ClassLecturer", fields: [lecturerId], references: [id])
-  location    Location     @relation(fields: [locationId], references: [id])
-  enrollments Enrollment[]
-  attendances Attendance[]
+  lecturer      User            @relation("ClassLecturer", fields: [lecturerId], references: [id])
+  location      Location        @relation(fields: [locationId], references: [id])
+  enrollments   Enrollment[]
+  attendances   Attendance[]
+  qrCodeSessions QRCodeSession[]
 
   @@map("classes")
 }
@@ -166,6 +175,9 @@ model Attendance {
   classId          String          @map("class_id")
   timestamp        DateTime        @default(now())
   method           AttendanceMethod @default(FACE_RECOGNITION)
+  status           AttendanceStatus @default(PRESENT)
+  checkInTime      DateTime?       @map("check_in_time")
+  checkOutTime     DateTime?       @map("check_out_time")
   ipAddress        String?         @map("ip_address")
   wifiSsid         String?         @map("wifi_ssid")
   gpsCoordinates   Json?           @map("gps_coordinates")
@@ -262,6 +274,42 @@ model AuditLog {
   @@map("audit_logs")
 }
 
+model QRCodeSession {
+  id              String   @id @default(cuid())
+  sessionToken    String   @unique @map("session_token")
+  classId         String   @map("class_id")
+  generatedBy     String   @map("generated_by")
+  expiresAt       DateTime @map("expires_at")
+  sessionDuration Int      @map("session_duration")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  class Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@map("qr_code_sessions")
+}
+
+model Document {
+  id           String                     @id @default(cuid())
+  userId       String                     @map("user_id")
+  fileName     String                     @map("file_name")
+  filePath     String                     @map("file_path")
+  fileSize     Int                        @map("file_size")
+  mimeType     String                     @map("mime_type")
+  documentType DocumentType               @map("document_type")
+  status       DocumentVerificationStatus @default(PENDING)
+  ocrData      Json?                      @map("ocr_data")
+  verifiedAt   DateTime?                  @map("verified_at")
+  verifiedById String?                    @map("verified_by_id")
+  rejectionReason String?                 @map("rejection_reason") @db.Text
+  createdAt    DateTime                   @default(now()) @map("created_at")
+  updatedAt    DateTime                   @updatedAt @map("updated_at")
+
+  user User @relation("UserDocuments", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("documents")
+}
+
 model OTP {
   id        String   @id @default(cuid())
   code      String
@@ -315,6 +363,13 @@ enum AttendanceMethod {
   BACKUP
 }
 
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
 enum RegistrationStepName {
   BASIC_INFO
   DOCUMENT_UPLOAD
@@ -341,7 +396,9 @@ enum DocumentType {
 
 enum DocumentVerificationStatus {
   PENDING
+  PENDING_VERIFICATION
   PROCESSING
+  VERIFIED
   APPROVED
   REJECTED
   NEEDS_RESUBMISSION

@@ -275,7 +275,7 @@ export class OTPService {
         hasActive: !!activeOTP,
         attemptsUsed: activeOTP?.attempts || 0,
         maxAttempts: this.MAX_ATTEMPTS,
-        expiresAt: activeOTP?.expiresAt,
+        expiresAt: activeOTP?.expiresAt || undefined,
         canRequestNew,
         nextRequestIn: Math.max(0, nextRequestIn)
       }

@@ -20,7 +20,7 @@ class DatabaseClient {
           : ['error'],
         datasources: {
           db: {
-            url: process.env.DATABASE_URL,
+            url: process.env.DATABASE_URL || '',
           },
         },
       });
@@ -90,7 +90,7 @@ export const dbUtils = {
         db.user.count(),
         db.attendance.count(),
         db.class.count(),
-        db.user.count({ where: { status: 'APPROVED' } })
+        db.user.count({ where: { status: 'ACTIVE' } })
       ]);
 
       return {
@@ -229,8 +229,8 @@ export const dbUtils = {
         }
       });
 
-      // Clean up expired password reset tokens
-      const deletedPasswordResets = await db.passwordResetToken.deleteMany({
+      // Clean up expired OTPs (including password reset)
+      const deletedOTPs = await db.oTP.deleteMany({
         where: {
           expiresAt: {
             lt: new Date()
@@ -240,7 +240,7 @@ export const dbUtils = {
 
       return {
         auditLogsDeleted: deletedAuditLogs.count,
-        passwordResetsDeleted: deletedPasswordResets.count,
+        otpsDeleted: deletedOTPs.count,
       };
     } catch (error) {
       console.error('Data cleanup failed:', error);
