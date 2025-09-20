@@ -2,6 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -27,7 +28,8 @@ import {
   Palette,
   Sparkles,
   Camera,
-  Crown
+  Crown,
+  Home
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { apiClient } from '@/lib/api-client'
@@ -157,17 +159,13 @@ export default function AdminDashboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-blackboard flex items-center justify-center relative overflow-hidden">
-        {/* Artistic loading background */}
-        <div className="absolute inset-0 bg-blackboard"></div>
-        <div className="absolute inset-0 bg-chalk-dust opacity-20"></div>
-
-        <div className="relative text-center">
-          <div className="w-20 h-20 card-chalk flex items-center justify-center border-2 border-white/40 rounded-xl shadow-chalk mb-6 mx-auto">
-            <LoadingSpinner className="w-10 h-10 text-white" />
+      <div className="min-h-screen pixel-bg flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-pixel-lg h-pixel-lg pixel-card flex items-center justify-center space-pixel-md mx-auto">
+            <LoadingSpinner className="w-pixel-md h-pixel-md text-foreground" />
           </div>
-          <p className="text-white font-chalk text-xl animate-pulse">
-            🎨 Preparing your artistic dashboard...
+          <p className="text-pixel animate-pixel-blink">
+            Loading admin dashboard...
           </p>
         </div>
       </div>
@@ -175,142 +173,123 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-blackboard text-white relative overflow-hidden p-6">
-      {/* Master's Studio Background */}
-      <div className="absolute inset-0 bg-blackboard"></div>
-      <div className="absolute inset-0 bg-blackboard-texture opacity-25"></div>
-      <div className="absolute inset-0 bg-chalk-dust opacity-20"></div>
-      <div className="absolute inset-0 bg-grid-chalk opacity-10"></div>
+    <div className="min-h-screen pixel-bg space-pixel-md">
+      {/* Home Button */}
+      <Link href="/" className="absolute top-pixel-md right-pixel-md z-50">
+        <Button variant="outline" size="sm" className="btn-pixel gap-pixel-xs">
+          <Home className="w-pixel h-pixel" />
+          Home
+        </Button>
+      </Link>
 
-      {/* Floating Chalk Particles */}
+      {/* Pixel Particles */}
       <div className="absolute inset-0 pointer-events-none">
-        {[...Array(25)].map((_, i) => (
+        {[...Array(15)].map((_, i) => (
           <div
             key={i}
-            className="absolute bg-white rounded-full animate-pulse"
+            className="absolute bg-foreground animate-pixel-blink"
             style={{
-              width: `${0.5 + Math.random() * 1.5}px`,
-              height: `${0.5 + Math.random() * 1.5}px`,
+              width: '2px',
+              height: '2px',
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 2}s`,
-              opacity: 0.1 + Math.random() * 0.3
+              animationDelay: `${Math.random() * 3}s`,
+              opacity: 0.3
             }}
           />
         ))}
       </div>
 
-      {/* Decorative Corner Elements */}
-      <div className="absolute top-4 left-4 w-20 h-20 opacity-15">
-        <svg viewBox="0 0 100 100" className="w-full h-full">
-          <path d="M20,20 Q50,10 80,20 Q90,50 80,80 Q50,90 20,80 Q10,50 20,20"
-                stroke="white" strokeWidth="2" fill="none" strokeDasharray="8,4"
-                className="animate-pulse" />
-        </svg>
-      </div>
-      <div className="absolute top-4 right-4 w-16 h-16 opacity-10">
-        <svg viewBox="0 0 100 100" className="w-full h-full">
-          <circle cx="50" cy="50" r="35" stroke="white" strokeWidth="2"
-                  fill="none" strokeDasharray="10,5" className="animate-spin"
-                  style={{animationDuration: '20s'}} />
-        </svg>
-      </div>
-      
-      <div className="relative max-w-7xl mx-auto">
-        {/* Master's Studio Header */}
-        <div className="flex items-center justify-between mb-12 relative">
-          <div className="flex items-center space-x-6">
-            {/* Master's Crown Icon */}
-            <div className="relative">
-              <div className="w-16 h-16 card-chalk flex items-center justify-center border-2 border-white/40 rounded-xl shadow-chalk animate-chalk-glow">
-                <Crown className="w-8 h-8 text-white" />
-              </div>
-              {/* Chalk dust around crown */}
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-white/60 rounded-full animate-pulse"></div>
-              <div className="absolute -bottom-2 -left-2 w-2 h-2 bg-white/40 rounded-full animate-pulse delay-500"></div>
+      {/* Pixel Corner Decorations */}
+      <div className="absolute top-pixel-sm left-pixel-sm w-pixel-lg h-pixel-lg bg-foreground opacity-20"></div>
+      <div className="absolute top-pixel-sm right-pixel-sm w-pixel-md h-pixel-md bg-foreground opacity-15"></div>
+
+      <div className="relative container-pixel">
+        {/* Admin Header */}
+        <div className="flex items-center justify-between space-pixel-lg">
+          <div className="flex items-center gap-pixel-md">
+            {/* Admin Icon */}
+            <div className="w-pixel-lg h-pixel-lg pixel-card flex items-center justify-center hover-pixel">
+              <Crown className="w-pixel-md h-pixel-md text-foreground" />
             </div>
 
             <div>
-              <h1 className="text-4xl md:text-5xl font-bold font-chalk text-chalk-drawn mb-3 animate-chalk-write">
-                🎨 Master's Studio
+              <h1 className="heading-pixel-1">
+                Admin Dashboard
               </h1>
-              <p className="text-white/80 font-chalk text-lg flex items-center">
-                <Palette className="mr-2 w-5 h-5" />
-                Command your artistic empire
+              <p className="text-pixel">
+                System management center
               </p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-pixel-sm">
             <Button
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="btn-chalk hover:scale-105 transition-all eraser-smudge"
+              className="btn-pixel"
             >
-              <RefreshCw className={cn("w-5 h-5 mr-2", isRefreshing && "animate-spin")} />
-              Refresh Canvas
+              <RefreshCw className={cn("w-pixel h-pixel mr-2", isRefreshing && "animate-spin")} />
+              Refresh
             </Button>
 
             <Button
               onClick={handleExportReport}
-              className="bg-white text-blackboard hover:bg-white/90 font-chalk px-6 py-3 border-2 border-white shadow-chalk hover:shadow-lg transition-all hover:scale-105"
+              className="btn-pixel-secondary"
             >
-              <Download className="w-5 h-5 mr-2" />
-              Export Masterpiece
+              <Download className="w-pixel h-pixel mr-2" />
+              Export
             </Button>
           </div>
         </div>
 
         {error && (
-          <Alert variant="destructive" className="mb-8 bg-red-900/20 border-2 border-red-600/50 text-red-200 backdrop-blur-sm card-chalk">
-            <AlertTriangle className="h-5 w-5 animate-pulse" />
-            <AlertDescription className="font-chalk">
-              ⚠️ {error}
-            </AlertDescription>
+          <Alert variant="destructive" className="space-pixel-md">
+            <AlertTriangle className="w-pixel h-pixel" />
+            <AlertDescription className="text-pixel-small">{error}</AlertDescription>
           </Alert>
         )}
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          {/* Artistic Tab Navigation */}
-          <div className="relative">
-            <div className="absolute -top-2 -left-2 -right-2 -bottom-2 border border-white/20 rounded-lg pointer-events-none"></div>
-            <TabsList className="bg-white/5 border-2 border-white/30 p-2 backdrop-blur-sm card-chalk w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-pixel-lg">
+          {/* Pixel Tab Navigation */}
+          <div className="pixel-card">
+            <TabsList className="pixel-tabs w-full">
               <TabsTrigger
                 value="overview"
-                className="data-[state=active]:bg-white data-[state=active]:text-blackboard text-white font-chalk px-6 py-3 transition-all hover:scale-105 data-[state=active]:shadow-chalk"
+                className="pixel-tab"
               >
-                <Activity className="w-5 h-5 mr-2" />
-                🎨 Gallery
+                <Activity className="w-pixel h-pixel mr-2" />
+                Overview
               </TabsTrigger>
               <TabsTrigger
                 value="users"
-                className="data-[state=active]:bg-white data-[state=active]:text-blackboard text-white font-chalk px-6 py-3 transition-all hover:scale-105 data-[state=active]:shadow-chalk"
+                className="pixel-tab"
               >
-                <Users className="w-5 h-5 mr-2" />
-                👥 Artists
+                <Users className="w-pixel h-pixel mr-2" />
+                Users
               </TabsTrigger>
               <TabsTrigger
                 value="classes"
-                className="data-[state=active]:bg-white data-[state=active]:text-blackboard text-white font-chalk px-6 py-3 transition-all hover:scale-105 data-[state=active]:shadow-chalk"
+                className="pixel-tab"
               >
-                <BookOpen className="w-5 h-5 mr-2" />
-                📚 Studios
+                <BookOpen className="w-pixel h-pixel mr-2" />
+                Classes
               </TabsTrigger>
               <TabsTrigger
                 value="analytics"
-                className="data-[state=active]:bg-white data-[state=active]:text-blackboard text-white font-chalk px-6 py-3 transition-all hover:scale-105 data-[state=active]:shadow-chalk"
+                className="pixel-tab"
               >
-                <BarChart3 className="w-5 h-5 mr-2" />
-                📈 Insights
+                <BarChart3 className="w-pixel h-pixel mr-2" />
+                Analytics
               </TabsTrigger>
             </TabsList>
           </div>
 
-          <TabsContent value="overview" className="space-y-6">
+          <TabsContent value="overview" className="space-pixel-lg">
             {/* Stats Overview */}
             {stats && <AdminStatsCards stats={stats} />}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-pixel-md">
               {/* Pending Approvals */}
               <div className="lg:col-span-1">
                 <PendingApprovals />
@@ -322,74 +301,59 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* Today's Artistic Attendance Canvas */}
+            {/* Today's Attendance Summary */}
             {stats && (
-              <Card className="card-chalk backdrop-blur-lg border-2 border-white/30 shadow-blackboard relative overflow-hidden">
-                {/* Artistic corner decorations */}
-                <div className="absolute top-4 left-4 text-2xl opacity-60">
-                  🕰️
-                </div>
-                <div className="absolute bottom-4 right-4 w-8 h-8 opacity-30">
-                  <svg viewBox="0 0 100 100" className="w-full h-full">
-                    <circle cx="50" cy="50" r="30" stroke="white" strokeWidth="2"
-                            fill="none" strokeDasharray="6,6" className="animate-spin"
-                            style={{animationDuration: '8s'}} />
-                  </svg>
-                </div>
-
+              <Card className="pixel-card hover-pixel">
                 <CardHeader>
-                  <CardTitle className="text-white font-chalk text-2xl flex items-center animate-chalk-glow">
-                    <Clock className="w-6 h-6 mr-3" />
-                    🎨 Today's Artistic Attendance
+                  <CardTitle className="heading-pixel-3 flex items-center">
+                    <Clock className="w-pixel-md h-pixel-md mr-3" />
+                    Today's Attendance
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="relative z-10">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div className="text-center p-4 card-chalk rounded-lg hover:scale-105 transition-transform">
-                      <div className="text-3xl font-bold text-white mb-2 font-chalk animate-chalk-glow">
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-pixel-md">
+                    <div className="text-center space-pixel-sm">
+                      <div className="heading-pixel-2">
                         {stats.attendance.todayTotal}
                       </div>
-                      <div className="text-white/70 font-chalk">🎨 Total Canvases</div>
+                      <div className="text-pixel-small">Total Sessions</div>
                     </div>
 
-                    <div className="text-center p-4 card-chalk rounded-lg hover:scale-105 transition-transform">
-                      <div className="text-3xl font-bold text-green-300 mb-2 font-chalk animate-chalk-glow">
+                    <div className="text-center space-pixel-sm">
+                      <div className="heading-pixel-2 text-foreground">
                         {stats.attendance.todayPresent}
                       </div>
-                      <div className="text-white/70 font-chalk">✅ Artists Present</div>
+                      <div className="text-pixel-small">Present</div>
                     </div>
 
-                    <div className="text-center p-4 card-chalk rounded-lg hover:scale-105 transition-transform">
-                      <div className="text-3xl font-bold text-yellow-300 mb-2 font-chalk animate-chalk-glow">
+                    <div className="text-center space-pixel-sm">
+                      <div className="heading-pixel-2">
                         {stats.attendance.todayLate}
                       </div>
-                      <div className="text-white/70 font-chalk">⏰ Late Arrivals</div>
+                      <div className="text-pixel-small">Late</div>
                     </div>
 
-                    <div className="text-center p-4 card-chalk rounded-lg hover:scale-105 transition-transform">
-                      <div className="text-3xl font-bold text-red-300 mb-2 font-chalk animate-chalk-glow">
+                    <div className="text-center space-pixel-sm">
+                      <div className="heading-pixel-2">
                         {stats.attendance.todayAbsent}
                       </div>
-                      <div className="text-white/70 font-chalk">❌ Missing Artists</div>
+                      <div className="text-pixel-small">Absent</div>
                     </div>
                   </div>
 
-                  <div className="mt-8 pt-6 border-t border-white/30">
+                  <div className="margin-pixel-md border-t border-border space-pixel-sm">
                     <div className="flex items-center justify-between">
-                      <span className="text-white/80 font-chalk text-lg">Weekly Studio Average</span>
-                      <div className="flex items-center space-x-3">
+                      <span className="text-pixel">Weekly Average</span>
+                      <div className="flex items-center gap-pixel-xs">
                         {stats.attendance.monthlyTrend > 0 ? (
-                          <TrendingUp className="w-5 h-5 text-green-300 animate-pulse" />
+                          <TrendingUp className="w-pixel h-pixel" />
                         ) : (
-                          <TrendingDown className="w-5 h-5 text-red-300 animate-pulse" />
+                          <TrendingDown className="w-pixel h-pixel" />
                         )}
-                        <span className="text-white font-chalk font-bold text-xl">
+                        <span className="text-pixel">
                           {stats.attendance.weeklyAverage.toFixed(1)}%
                         </span>
-                        <span className={cn(
-                          "font-chalk text-lg",
-                          stats.attendance.monthlyTrend > 0 ? "text-green-300" : "text-red-300"
-                        )}>
+                        <span className="text-pixel-small">
                           {stats.attendance.monthlyTrend > 0 ? '+' : ''}{stats.attendance.monthlyTrend.toFixed(1)}%
                         </span>
                       </div>
@@ -441,68 +405,57 @@ export default function AdminDashboard() {
 
               {/* System Health */}
               {stats && (
-                <Card className="card-chalk backdrop-blur-lg border-2 border-white/30 shadow-blackboard relative overflow-hidden">
-                  {/* Artistic decorations */}
-                  <div className="absolute top-4 left-4 text-2xl opacity-60">
-                    🎯
-                  </div>
-                  <div className="absolute bottom-4 right-4 w-10 h-10 opacity-30">
-                    <svg viewBox="0 0 100 100" className="w-full h-full">
-                      <path d="M25,25 L75,25 L75,75 L25,75 Z" stroke="white" strokeWidth="2"
-                            fill="none" strokeDasharray="8,4" className="animate-pulse" />
-                    </svg>
-                  </div>
-
+                <Card className="pixel-card hover-pixel">
                   <CardHeader>
-                    <CardTitle className="text-white font-chalk text-2xl flex items-center animate-chalk-glow">
-                      <Activity className="w-6 h-6 mr-3" />
-                      🎨 Studio Health Monitor
+                    <CardTitle className="heading-pixel-3 flex items-center">
+                      <Activity className="w-pixel-md h-pixel-md mr-3" />
+                      System Health
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="relative z-10">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                      <div className="p-6 rounded-lg card-chalk border border-white/20 hover:scale-105 transition-transform group">
-                        <div className="flex items-center justify-between mb-4">
-                          <MapPin className="w-6 h-6 text-white/70 group-hover:animate-pulse" />
-                          <CheckCircle className="w-5 h-5 text-green-300 animate-pulse" />
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-pixel-md">
+                      <div className="pixel-card space-pixel-sm hover-pixel">
+                        <div className="flex items-center justify-between margin-pixel-xs">
+                          <MapPin className="w-pixel h-pixel" />
+                          <CheckCircle className="w-pixel h-pixel text-foreground" />
                         </div>
-                        <div className="text-2xl font-bold text-white font-chalk mb-2">
+                        <div className="heading-pixel-2 margin-pixel-xs">
                           {stats.system.totalLocations}
                         </div>
-                        <div className="text-white/70 font-chalk">🗺️ Studio Locations</div>
+                        <div className="text-pixel-small">Locations</div>
                       </div>
 
-                      <div className="p-6 rounded-lg card-chalk border border-white/20 hover:scale-105 transition-transform group">
-                        <div className="flex items-center justify-between mb-4">
-                          <Wifi className="w-6 h-6 text-white/70 group-hover:animate-pulse" />
-                          <CheckCircle className="w-5 h-5 text-green-300 animate-pulse" />
+                      <div className="pixel-card space-pixel-sm hover-pixel">
+                        <div className="flex items-center justify-between margin-pixel-xs">
+                          <Wifi className="w-pixel h-pixel" />
+                          <CheckCircle className="w-pixel h-pixel text-foreground" />
                         </div>
-                        <div className="text-2xl font-bold text-white font-chalk mb-2">
+                        <div className="heading-pixel-2 margin-pixel-xs">
                           {stats.system.activeWifiNetworks}
                         </div>
-                        <div className="text-white/70 font-chalk">📶 WiFi Networks</div>
+                        <div className="text-pixel-small">WiFi Networks</div>
                       </div>
 
-                      <div className="p-6 rounded-lg card-chalk border border-white/20 hover:scale-105 transition-transform group">
-                        <div className="flex items-center justify-between mb-4">
-                          <UserCheck className="w-6 h-6 text-white/70 group-hover:animate-pulse" />
-                          <CheckCircle className="w-5 h-5 text-green-300 animate-pulse" />
+                      <div className="pixel-card space-pixel-sm hover-pixel">
+                        <div className="flex items-center justify-between margin-pixel-xs">
+                          <UserCheck className="w-pixel h-pixel" />
+                          <CheckCircle className="w-pixel h-pixel text-foreground" />
                         </div>
-                        <div className="text-2xl font-bold text-white font-chalk mb-2">
+                        <div className="heading-pixel-2 margin-pixel-xs">
                           {stats.system.faceProfiles}
                         </div>
-                        <div className="text-white/70 font-chalk">🎨 Artist Profiles</div>
+                        <div className="text-pixel-small">Face Profiles</div>
                       </div>
 
-                      <div className="p-6 rounded-lg card-chalk border border-white/20 hover:scale-105 transition-transform group">
-                        <div className="flex items-center justify-between mb-4">
-                          <Settings className="w-6 h-6 text-white/70 group-hover:animate-pulse" />
-                          <CheckCircle className="w-5 h-5 text-green-300 animate-pulse" />
+                      <div className="pixel-card space-pixel-sm hover-pixel">
+                        <div className="flex items-center justify-between margin-pixel-xs">
+                          <Settings className="w-pixel h-pixel" />
+                          <CheckCircle className="w-pixel h-pixel text-foreground" />
                         </div>
-                        <div className="text-2xl font-bold text-white font-chalk mb-2">
+                        <div className="heading-pixel-2 margin-pixel-xs">
                           {stats.system.qrSessions}
                         </div>
-                        <div className="text-white/70 font-chalk">📱 Active QR Canvas</div>
+                        <div className="text-pixel-small">QR Sessions</div>
                       </div>
                     </div>
                   </CardContent>

@@ -19,25 +19,19 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       <div className="space-y-1">
         <div className="relative">
           {icon && (
-            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 dark:text-slate-500">
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
               {icon}
             </div>
           )}
           <input
             type={inputType}
             className={cn(
-              "flex h-11 w-full rounded-md border-2 border-slate-200 bg-white px-3 py-2 text-sm",
-              "placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-transparent",
+              "input-pixel",
+              "flex w-full text-sm",
               "disabled:cursor-not-allowed disabled:opacity-50",
-              "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-50 dark:placeholder:text-slate-500",
-              "dark:focus:ring-slate-600",
-              // Blackboard theme styles
-              "bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600",
-              "font-mono tracking-wide",
-              "shadow-inner",
               icon && "pl-10",
               isPassword && "pr-10",
-              error && "border-red-500 focus:ring-red-400 dark:border-red-400 dark:focus:ring-red-500",
+              error && "border-destructive focus:ring-destructive",
               className
             )}
             ref={ref}
@@ -46,7 +40,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           {isPassword && (
             <button
               type="button"
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors duration-100"
               onClick={() => setShowPassword(!showPassword)}
             >
               {showPassword ? (
@@ -59,8 +53,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         </div>
         {helperText && (
           <p className={cn(
-            "text-xs",
-            error ? "text-red-500 dark:text-red-400" : "text-slate-500 dark:text-slate-400"
+            "text-pixel-small",
+            error ? "text-destructive" : "text-muted-foreground"
           )}>
             {helperText}
           </p>

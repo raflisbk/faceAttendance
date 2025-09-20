@@ -3,13 +3,15 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { RegistrationProgress } from '@/components/ui/progress'
 import { RegistrationStep1 } from './step-1'
 import { RegistrationStep2 } from './step-2'
 import { RegistrationStep3 } from './step-3'
 import { RegistrationComplete } from './complete'
 import { Card, CardContent } from '@/components/ui/card'
-import { UserPlus, Palette, Sparkles, Camera } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { UserPlus, Palette, Sparkles, Camera, Home } from 'lucide-react'
 
 export interface RegistrationData {
   step1?: any
@@ -90,93 +92,103 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-blackboard text-white relative overflow-hidden p-4 flex items-center justify-center">
-      {/* Artistic Blackboard Background */}
-      <div className="absolute inset-0 bg-blackboard"></div>
-      <div className="absolute inset-0 bg-blackboard-texture opacity-30"></div>
-      <div className="absolute inset-0 bg-chalk-dust opacity-25"></div>
-      <div className="absolute inset-0 bg-grid-chalk opacity-15"></div>
+    <div className="min-h-screen pixel-bg relative overflow-hidden space-pixel-md flex items-center justify-center">
+      {/* Home Button */}
+      <Link href="/" className="absolute top-pixel-md right-pixel-md z-50">
+        <Button variant="outline" size="sm" className="btn-pixel gap-pixel-xs">
+          <Home className="w-pixel h-pixel" />
+          Home
+        </Button>
+      </Link>
 
-      {/* Floating Chalk Particles */}
+      {/* Pixel Background */}
+
+      {/* Pixel Particles */}
       <div className="absolute inset-0 pointer-events-none">
-        {[...Array(40)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute bg-white rounded-full animate-pulse"
-            style={{
-              width: `${0.5 + Math.random() * 2}px`,
-              height: `${0.5 + Math.random() * 2}px`,
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 3}s`,
-              opacity: 0.2 + Math.random() * 0.5
-            }}
-          />
-        ))}
+        {[...Array(20)].map((_, i) => {
+          // Use deterministic values based on index to avoid hydration mismatch
+          const left = (i * 37 + 23) % 100; // Pseudo-random but deterministic
+          const top = (i * 43 + 17) % 100;
+          const delay = (i * 0.15) % 3;
+
+          return (
+            <div
+              key={i}
+              className="absolute bg-foreground animate-pixel-blink"
+              style={{
+                width: '2px',
+                height: '2px',
+                left: `${left}%`,
+                top: `${top}%`,
+                animationDelay: `${delay}s`,
+                opacity: 0.3
+              }}
+            />
+          );
+        })}
       </div>
 
-      {/* Decorative Corner Art */}
-      <div className="absolute top-8 left-8 w-24 h-24 opacity-20">
-        <svg viewBox="0 0 100 100" className="w-full h-full">
-          <path d="M20,20 Q50,10 80,20 Q90,50 80,80 Q50,90 20,80 Q10,50 20,20"
-                stroke="white" strokeWidth="2" fill="none" strokeDasharray="10,5"
-                className="animate-pulse" />
-          <circle cx="50" cy="50" r="15" stroke="white" strokeWidth="1"
-                  fill="none" strokeDasharray="5,5" className="animate-spin"
-                  style={{animationDuration: '10s'}} />
-        </svg>
+      {/* Pixel Corner Decorations */}
+      <div className="absolute top-8 left-8 w-16 h-16 opacity-30">
+        <div className="grid grid-cols-4 gap-1 w-full h-full">
+          {[...Array(16)].map((_, i) => (
+            <div
+              key={i}
+              className="bg-foreground animate-pixel-blink"
+              style={{
+                animationDelay: `${i * 0.1}s`
+              }}
+            />
+          ))}
+        </div>
       </div>
-      <div className="absolute top-8 right-8 w-20 h-20 opacity-15">
-        <svg viewBox="0 0 100 100" className="w-full h-full">
-          <rect x="20" y="20" width="60" height="60" stroke="white"
-                strokeWidth="2" fill="none" strokeDasharray="8,6"
-                className="animate-pulse" style={{animationDelay: '1s'}} />
-        </svg>
+      <div className="absolute top-8 right-8 w-12 h-12 opacity-20">
+        <div className="border-2 border-foreground w-full h-full pixel-border"></div>
       </div>
 
-      <div className="relative w-full max-w-2xl">
-        {/* Artistic Header */}
-        <div className="text-center mb-12 relative">
-          {/* Artist's easel icon */}
-          <div className="relative inline-block mb-8">
-            <div className="w-24 h-24 card-chalk flex items-center justify-center border-2 border-white/40 rounded-xl shadow-chalk animate-chalk-glow">
-              <Palette className="w-10 h-10 text-white" />
+      <div className="relative w-full max-w-2xl container-pixel">
+        {/* Pixel Header */}
+        <div className="text-center space-pixel-lg relative">
+          {/* Pixel icon */}
+          <div className="relative inline-block space-pixel-lg">
+            <div className="w-24 h-24 pixel-card flex items-center justify-center pixel-shadow hover-pixel">
+              <Palette className="w-10 h-10 text-foreground" />
             </div>
-            {/* Chalk dust around icon */}
-            <div className="absolute -top-2 -right-2 w-4 h-4 bg-white/60 rounded-full animate-pulse"></div>
-            <div className="absolute -bottom-3 -left-3 w-3 h-3 bg-white/40 rounded-full animate-pulse delay-500"></div>
-            <div className="absolute top-3 right-10 w-2 h-2 bg-white/80 rounded-full animate-pulse delay-1000"></div>
-            <div className="absolute bottom-5 left-8 w-1 h-1 bg-white/60 rounded-full animate-pulse delay-1500"></div>
+            {/* Pixel particles around icon */}
+            <div className="absolute -top-2 -right-2 w-2 h-2 bg-foreground animate-pixel-blink"></div>
+            <div className="absolute -bottom-3 -left-3 w-2 h-2 bg-foreground animate-pixel-blink" style={{animationDelay: '0.5s'}}></div>
+            <div className="absolute top-3 right-10 w-2 h-2 bg-foreground animate-pixel-blink" style={{animationDelay: '1s'}}></div>
+            <div className="absolute bottom-5 left-8 w-2 h-2 bg-foreground animate-pixel-blink" style={{animationDelay: '1.5s'}}></div>
           </div>
 
-          {/* Hand-drawn title */}
-          <h1 className="text-5xl md:text-6xl font-bold font-chalk text-chalk-drawn mb-6 animate-chalk-write">
-            🎨 Join the Studio
+          {/* Pixel title */}
+          <h1 className="heading-pixel-1 space-pixel-md animate-pixel-fade">
+            Join the System
           </h1>
 
-          {/* Decorative underline */}
-          <div className="flex justify-center items-center mb-6">
-            <div className="w-20 h-px bg-white/60 rounded-full"></div>
-            <Sparkles className="mx-4 w-6 h-6 text-white/70 animate-pulse" />
-            <div className="w-20 h-px bg-white/60 rounded-full"></div>
+          {/* Pixel decorative line */}
+          <div className="flex justify-center items-center space-pixel-md">
+            <div className="w-20 h-px bg-foreground"></div>
+            <Sparkles className="mx-4 w-6 h-6 text-foreground animate-pixel-blink" />
+            <div className="w-20 h-px bg-foreground"></div>
           </div>
 
-          <p className="text-white/80 font-chalk text-xl">
-            Begin your artistic journey with our recognition canvas
+          <p className="text-pixel">
+            Begin your journey with our recognition system
           </p>
-          <p className="text-white/60 font-chalk text-lg mt-2 italic">
-            "Every masterpiece starts with a single brushstroke"
+          <p className="text-pixel-small text-muted-foreground margin-pixel-xs">
+            "Every journey starts with a single step"
           </p>
         </div>
 
-        {/* Artistic Progress Gallery */}
-        <div className="mb-10 relative">
-          {/* Gallery frame */}
-          <div className="absolute -top-4 -left-4 -right-4 -bottom-4 border border-white/20 rounded-lg pointer-events-none"></div>
-          <div className="bg-white/5 border border-white/30 rounded-lg p-6 backdrop-blur-sm">
-            <h3 className="text-center font-chalk text-xl text-white/90 mb-6 flex items-center justify-center">
+        {/* Pixel Progress */}
+        <div className="space-pixel-lg relative">
+          {/* Pixel frame */}
+          <div className="absolute -top-4 -left-4 -right-4 -bottom-4 border border-border pointer-events-none"></div>
+          <div className="pixel-card space-pixel-md">
+            <h3 className="text-center heading-pixel-3 space-pixel-md flex items-center justify-center">
               <Camera className="mr-3 w-5 h-5" />
-              Your Creative Journey
+              Your Registration Journey
               <Camera className="ml-3 w-5 h-5" />
             </h3>
             <RegistrationProgress
@@ -187,34 +199,16 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        {/* Artistic Canvas Content */}
-        <Card className="card-chalk backdrop-blur-lg border-2 border-white/30 shadow-blackboard relative overflow-hidden">
-          {/* Corner artistic elements */}
-          <div className="absolute top-4 left-4 text-3xl opacity-60">
-            🎨
-          </div>
-          <div className="absolute top-4 right-4 text-2xl opacity-40">
-            ✨
-          </div>
-          <div className="absolute bottom-4 left-4 w-10 h-10 opacity-30">
-            <svg viewBox="0 0 100 100" className="w-full h-full">
-              <path d="M20,50 Q50,20 80,50 Q50,80 20,50" stroke="white"
-                    strokeWidth="2" fill="none" strokeDasharray="8,4"
-                    className="animate-pulse" />
-            </svg>
-          </div>
-          <div className="absolute bottom-4 right-4 w-8 h-8 opacity-25">
-            <svg viewBox="0 0 100 100" className="w-full h-full">
-              <circle cx="50" cy="50" r="30" stroke="white" strokeWidth="2"
-                      fill="none" strokeDasharray="6,6" className="animate-spin"
-                      style={{animationDuration: '8s'}} />
-            </svg>
-          </div>
+        {/* Pixel Content */}
+        <Card className="pixel-card hover-pixel relative overflow-hidden">
+          {/* Corner pixel elements */}
+          <div className="absolute top-pixel-sm left-pixel-sm w-pixel h-pixel bg-foreground opacity-30"></div>
+          <div className="absolute top-pixel-sm right-pixel-sm w-pixel h-pixel bg-foreground opacity-20"></div>
+          <div className="absolute bottom-pixel-sm left-pixel-sm w-pixel h-pixel bg-foreground opacity-20"></div>
+          <div className="absolute bottom-pixel-sm right-pixel-sm w-pixel-md h-pixel-md bg-foreground opacity-25"></div>
 
-          <CardContent className="p-10 relative z-10">
-            <div className="chalk-particles">
-              {renderStep()}
-            </div>
+          <CardContent className="space-pixel-lg relative">
+            {renderStep()}
           </CardContent>
         </Card>
       </div>

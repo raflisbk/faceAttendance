@@ -2,12 +2,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useToastHelpers } from '@/components/ui/toast'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { 
+import {
   Calendar,
   Clock,
   Users,
@@ -21,7 +22,8 @@ import {
   BarChart3,
   MapPin,
   Wifi,
-  History
+  History,
+  Home
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ApiClient } from '@/lib/api-client'
@@ -140,122 +142,126 @@ export default function StudentDashboard() {
   }
 
   const getAttendanceColor = (rate: number) => {
-    if (rate >= 80) return 'text-green-300'
-    if (rate >= 60) return 'text-yellow-300'
-    return 'text-red-300'
+    if (rate >= 80) return 'text-foreground'
+    if (rate >= 60) return 'text-muted-foreground'
+    return 'text-destructive'
   }
 
   const getStatusIcon = (status?: string) => {
     switch (status) {
       case 'PRESENT':
-        return <CheckCircle className="w-4 h-4 text-green-400" />
+        return <CheckCircle className="w-4 h-4 text-foreground" />
       case 'LATE':
-        return <AlertCircle className="w-4 h-4 text-yellow-400" />
+        return <AlertCircle className="w-4 h-4 text-muted-foreground" />
       case 'ABSENT':
-        return <XCircle className="w-4 h-4 text-red-400" />
+        return <XCircle className="w-4 h-4 text-destructive" />
       default:
-        return <Clock className="w-4 h-4 text-slate-400" />
+        return <Clock className="w-4 h-4 text-muted-foreground" />
     }
   }
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <LoadingSpinner className="w-8 h-8 text-white" />
+      <div className="min-h-screen pixel-bg flex items-center justify-center">
+        <LoadingSpinner className="w-8 h-8 text-foreground" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 p-6">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_0%,_rgba(15,23,42,0.8)_100%)]" />
-      <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:60px_60px]" />
-      
-      <div className="relative max-w-7xl mx-auto">
+    <div className="min-h-screen pixel-bg space-pixel-md">
+      {/* Home Button */}
+      <Link href="/" className="absolute top-pixel-md right-pixel-md z-50">
+        <Button variant="outline" size="sm" className="btn-pixel gap-pixel-xs">
+          <Home className="w-pixel h-pixel" />
+          Home
+        </Button>
+      </Link>
+
+      <div className="relative container-pixel">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">
-            Welcome back, {user?.name}!
+        <div className="space-pixel-lg">
+          <h1 className="heading-pixel-1">
+            Welcome, {user?.name}!
           </h1>
-          <p className="text-slate-400">
+          <p className="text-pixel-small">
             {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         </div>
 
         {error && (
-          <Alert variant="destructive" className="mb-6 bg-red-900/50 border-red-800 text-red-200">
+          <Alert variant="destructive" className="space-pixel-md">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription className="text-pixel-small">{error}</AlertDescription>
           </Alert>
         )}
 
         {/* Stats Overview */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-sm">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-slate-200">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-pixel-md space-pixel-lg">
+            <Card className="pixel-card hover-pixel">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-pixel">
                   Attendance Rate
                 </CardTitle>
-                <TrendingUp className="h-4 w-4 text-slate-400" />
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className={cn("text-2xl font-bold", getAttendanceColor(stats.attendanceRate))}>
+                <div className={cn("heading-pixel-3", getAttendanceColor(stats.attendanceRate))}>
                   {stats.attendanceRate.toFixed(1)}%
                 </div>
-                <p className="text-xs text-slate-400">
+                <p className="text-pixel-small">
                   {stats.presentCount} present of {stats.totalClasses} total
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-sm">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-slate-200">
+            <Card className="pixel-card hover-pixel">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-pixel">
                   Today's Classes
                 </CardTitle>
-                <Calendar className="h-4 w-4 text-slate-400" />
+                <Calendar className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-white">
+                <div className="heading-pixel-3">
                   {stats.todayClasses}
                 </div>
-                <p className="text-xs text-slate-400">
+                <p className="text-pixel-small">
                   {stats.upcomingClass ? 'Next: ' + stats.upcomingClass.name : 'No more classes today'}
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-sm">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-slate-200">
+            <Card className="pixel-card hover-pixel">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-pixel">
                   Present Sessions
                 </CardTitle>
-                <CheckCircle className="h-4 w-4 text-green-400" />
+                <CheckCircle className="h-4 w-4 text-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-400">
+                <div className="heading-pixel-3">
                   {stats.presentCount}
                 </div>
-                <p className="text-xs text-slate-400">
+                <p className="text-pixel-small">
                   {stats.lateCount} late arrivals
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-sm">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-slate-200">
+            <Card className="pixel-card hover-pixel">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-pixel">
                   Absent Sessions
                 </CardTitle>
-                <XCircle className="h-4 w-4 text-red-400" />
+                <XCircle className="h-4 w-4 text-destructive" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-red-400">
+                <div className="heading-pixel-3 text-destructive">
                   {stats.absentCount}
                 </div>
-                <p className="text-xs text-slate-400">
+                <p className="text-pixel-small">
                   This semester
                 </p>
               </CardContent>
@@ -264,60 +270,60 @@ export default function StudentDashboard() {
         )}
 
         {/* Today's Classes */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-pixel-md space-pixel-lg">
           <div className="lg:col-span-2">
-            <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-sm">
+            <Card className="pixel-card hover-pixel">
               <CardHeader>
-                <CardTitle className="text-white flex items-center">
+                <CardTitle className="heading-pixel-3 flex items-center">
                   <BookOpen className="w-5 h-5 mr-2" />
                   Today's Classes
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {todayClasses.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Calendar className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                    <p className="text-slate-400">No classes scheduled for today</p>
+                  <div className="text-center space-pixel-lg">
+                    <Calendar className="w-12 h-12 text-muted-foreground mx-auto space-pixel-md" />
+                    <p className="text-pixel">No classes scheduled for today</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="flex-pixel-col">
                     {todayClasses.map((classItem) => (
                       <div
                         key={classItem.id}
                         className={cn(
-                          "p-4 rounded-lg border transition-all",
+                          "pixel-card transition-all",
                           classItem.isInSession
-                            ? "bg-green-900/20 border-green-800"
-                            : "bg-slate-800/50 border-slate-700"
+                            ? "bg-foreground text-background"
+                            : "hover-pixel"
                         )}
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <div className="flex items-center space-x-2 mb-2">
+                            <div className="flex items-center gap-pixel-xs margin-pixel-xs">
                               {getStatusIcon(classItem.attendance?.status)}
-                              <h3 className="font-semibold text-white">
+                              <h3 className="text-pixel">
                                 {classItem.name}
                               </h3>
-                              <span className="text-sm text-slate-400">
+                              <span className="text-pixel-small">
                                 ({classItem.code})
                               </span>
                             </div>
                             
-                            <div className="space-y-1 text-sm text-slate-300">
+                            <div className="flex-pixel-col text-pixel-small">
                               <div className="flex items-center">
-                                <Users className="w-4 h-4 mr-2 text-slate-400" />
+                                <Users className="w-4 h-4 mr-2 text-muted-foreground" />
                                 {classItem.lecturer.name}
                               </div>
                               <div className="flex items-center">
-                                <Clock className="w-4 h-4 mr-2 text-slate-400" />
+                                <Clock className="w-4 h-4 mr-2 text-muted-foreground" />
                                 {FormatUtils.formatTime(classItem.schedule.startTime)} - {FormatUtils.formatTime(classItem.schedule.endTime)}
                               </div>
                               <div className="flex items-center">
-                                <MapPin className="w-4 h-4 mr-2 text-slate-400" />
+                                <MapPin className="w-4 h-4 mr-2 text-muted-foreground" />
                                 {classItem.location.name}, {classItem.location.building}
                               </div>
                               <div className="flex items-center">
-                                <Wifi className="w-4 h-4 mr-2 text-slate-400" />
+                                <Wifi className="w-4 h-4 mr-2 text-muted-foreground" />
                                 {classItem.location.wifiSSID}
                               </div>
                             </div>

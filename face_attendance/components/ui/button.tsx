@@ -4,28 +4,27 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 dark:ring-offset-slate-950 dark:focus-visible:ring-slate-300",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 font-mono",
   {
     variants: {
       variant: {
-        default: "bg-slate-900 text-slate-50 hover:bg-slate-900/90 dark:bg-slate-50 dark:text-slate-900 dark:hover:bg-slate-50/90",
-        destructive:
-          "bg-red-500 text-slate-50 hover:bg-red-500/90 dark:bg-red-900 dark:text-slate-50 dark:hover:bg-red-900/90",
-        outline:
-          "border border-slate-200 bg-white hover:bg-slate-100 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-800 dark:hover:text-slate-50",
-        secondary:
-          "bg-slate-100 text-slate-900 hover:bg-slate-100/80 dark:bg-slate-800 dark:text-slate-50 dark:hover:bg-slate-800/80",
-        ghost: "hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-50",
-        link: "text-slate-900 underline-offset-4 hover:underline dark:text-slate-50",
-        chalk: "bg-slate-800 text-white border-2 border-white hover:bg-slate-700 shadow-lg transform hover:scale-105 transition-all duration-200 font-bold tracking-wide",
-        chalkOutline: "border-2 border-slate-300 bg-transparent text-slate-800 hover:bg-slate-800 hover:text-white transition-all duration-200 font-semibold dark:border-slate-400 dark:text-slate-300 dark:hover:bg-slate-300 dark:hover:text-slate-800"
+        default: "btn-pixel",
+        destructive: "btn-pixel bg-destructive text-destructive-foreground hover:translate-x-1 hover:translate-y-1",
+        outline: "btn-pixel-secondary",
+        secondary: "btn-pixel-secondary",
+        ghost: "text-foreground hover:bg-muted hover:text-foreground transition-all duration-100",
+        link: "text-foreground underline-offset-4 hover:underline",
+        pixel: "btn-pixel",
+        pixelSecondary: "btn-pixel-secondary",
+        chalk: "btn-pixel",
+        chalkOutline: "btn-pixel-secondary"
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-md px-8",
-        xl: "h-12 rounded-md px-10 text-base",
-        icon: "h-10 w-10",
+        default: "px-4 py-2",
+        sm: "px-3 py-1.5 text-xs",
+        lg: "px-6 py-3",
+        xl: "px-8 py-4 text-base",
+        icon: "w-10 h-10 p-0",
       },
     },
     defaultVariants: {

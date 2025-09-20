@@ -18,6 +18,9 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
+    "@fontsource/jetbrains-mono": "^5.2.8",
+    "@fontsource/press-start-2p": "^5.2.7",
+    "@fontsource/space-mono": "^5.2.9",
     "@headlessui/react": "^2.2.8",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^3.9.1",

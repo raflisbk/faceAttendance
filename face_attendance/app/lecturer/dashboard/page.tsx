@@ -2,6 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -23,7 +24,8 @@ import {
   RefreshCw,
   Plus,
   Eye,
-  MapPin
+  MapPin,
+  Home
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ApiClient } from '@/lib/api-client'
@@ -180,91 +182,95 @@ export default function LecturerDashboard() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'UPCOMING':
-        return 'text-blue-400 bg-blue-900/20 border-blue-800'
+        return 'text-foreground bg-background border-border'
       case 'IN_SESSION':
-        return 'text-green-400 bg-green-900/20 border-green-800'
+        return 'text-foreground bg-background border-border'
       case 'COMPLETED':
-        return 'text-slate-400 bg-slate-800/20 border-slate-700'
+        return 'text-muted-foreground bg-background border-border'
       default:
-        return 'text-slate-400 bg-slate-800/20 border-slate-700'
+        return 'text-muted-foreground bg-background border-border'
     }
   }
 
   const getAttendanceColor = (rate: number) => {
-    if (rate >= 80) return 'text-green-400'
-    if (rate >= 60) return 'text-yellow-400'
-    return 'text-red-400'
+    if (rate >= 80) return 'text-foreground'
+    if (rate >= 60) return 'text-muted-foreground'
+    return 'text-destructive'
   }
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <LoadingSpinner className="w-8 h-8 text-white" />
+      <div className="min-h-screen pixel-bg flex items-center justify-center">
+        <LoadingSpinner className="w-pixel-md h-pixel-md text-foreground" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 p-6">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_0%,_rgba(15,23,42,0.8)_100%)]" />
-      <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:60px_60px]" />
-      
-      <div className="relative max-w-7xl mx-auto">
+    <div className="min-h-screen pixel-bg space-pixel-md">
+      {/* Home Button */}
+      <Link href="/" className="absolute top-pixel-md right-pixel-md z-50">
+        <Button variant="outline" size="sm" className="btn-pixel gap-pixel-xs">
+          <Home className="w-pixel h-pixel" />
+          Home
+        </Button>
+      </Link>
+
+      <div className="relative container-pixel">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between space-pixel-lg">
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2">
-              Welcome back, Prof. {user?.name?.split(' ')[0] || 'Lecturer'}!
+            <h1 className="heading-pixel-1">
+              Welcome, Prof. {user?.name?.split(' ')[0] || 'Lecturer'}!
             </h1>
-            <p className="text-slate-400">
+            <p className="text-pixel">
               {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </p>
           </div>
           
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-pixel-sm">
             <Button
               variant="outline"
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white"
+              className="btn-pixel"
             >
-              <RefreshCw className={cn("w-4 h-4 mr-2", isRefreshing && "animate-spin")} />
+              <RefreshCw className={cn("w-pixel h-pixel mr-2", isRefreshing && "animate-spin")} />
               Refresh
             </Button>
-            
+
             <Button
               onClick={() => window.location.href = '/lecturer/classes/create'}
-              className="bg-slate-700 hover:bg-slate-600 text-white"
+              className="btn-pixel-secondary"
             >
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus className="w-pixel h-pixel mr-2" />
               New Class
             </Button>
           </div>
         </div>
 
         {error && (
-          <Alert variant="destructive" className="mb-6 bg-red-900/50 border-red-800 text-red-200">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
+          <Alert variant="destructive" className="space-pixel-md">
+            <AlertCircle className="w-pixel h-pixel" />
+            <AlertDescription className="text-pixel-small">{error}</AlertDescription>
           </Alert>
         )}
 
         {/* Stats Overview */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-sm">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-slate-200">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-pixel-md space-pixel-lg">
+            <Card className="pixel-card hover-pixel">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-pixel">
                   My Classes
                 </CardTitle>
-                <BookOpen className="h-4 w-4 text-slate-400" />
+                <BookOpen className="w-pixel h-pixel" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-white">
+                <div className="heading-pixel-2">
                   {stats.classes.active}
                 </div>
-                <p className="text-xs text-slate-400">
+                <p className="text-pixel-small">
                   {stats.classes.todayClasses} classes today
                 </p>
               </CardContent>

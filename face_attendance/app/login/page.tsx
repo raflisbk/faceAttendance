@@ -23,7 +23,8 @@ import {
   ExclamationTriangleIcon,
   ArrowRightIcon,
   UserPlusIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  HomeIcon
 } from '@heroicons/react/24/outline'
 import { cn } from '@/lib/utils'
 import { ApiClient } from '@/lib/api-client'
@@ -119,99 +120,105 @@ export default function LoginPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen clean-bg flex items-center justify-center">
+      <div className="min-h-screen pixel-bg flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 enterprise-card flex items-center justify-center mx-auto mb-4">
-            <LoadingSpinner className="w-6 h-6 text-blue-600" />
+          <div className="w-12 h-12 pixel-card flex items-center justify-center mx-auto space-pixel-md">
+            <LoadingSpinner className="w-6 h-6 text-foreground" />
           </div>
-          <p className="text-muted">Authenticating...</p>
+          <p className="text-pixel">Authenticating...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen blackboard-bg flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-8 animate-slide-up">
-        {/* Header */}
-        <div className="text-center">
-          <div className="flex items-center justify-center space-x-4 mb-8">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-blue-500 shadow-lg border border-green-300/20 flex items-center justify-center hover:shadow-green-400/50 transition-all duration-300">
-              <CameraIcon className="w-4 h-4 text-white" />
-            </div>
-            <div className="text-left">
-              <h1 className="text-3xl font-bold text-green-300 font-kalam animate-pulse">FaceAttend</h1>
-              <p className="text-sm text-blue-300 font-caveat">Enterprise Blackboard</p>
-            </div>
-          </div>
+    <div className="min-h-screen pixel-bg flex items-center justify-center space-pixel-md">
+      {/* Home Button */}
+      <Link href="/" className="absolute top-pixel-md right-pixel-md">
+        <Button variant="outline" size="sm" className="btn-pixel gap-pixel-xs">
+          <HomeIcon className="w-pixel h-pixel" />
+          Home
+        </Button>
+      </Link>
 
-          <div className="space-y-3">
-            <h2 className="text-4xl font-bold text-green-200 font-caveat">Welcome Back</h2>
-            <p className="text-blue-200 font-kalam italic">
-              Sign in to access your digital blackboard
-            </p>
+      {/* Header with FaceAttend and Welcome */}
+      <div className="absolute top-pixel-md left-pixel-md">
+        <Link href="/" className="flex items-center gap-pixel-xs hover-pixel">
+          <div className="w-8 h-8 bg-foreground pixel-border flex items-center justify-center">
+            <CameraIcon className="w-3 h-3 text-background" />
           </div>
+          <h1 className="heading-pixel-3">FaceAttend</h1>
+        </Link>
+      </div>
+
+      <div className="absolute top-pixel-md left-1/2 transform -translate-x-1/2">
+        <div className="text-center">
+          <h2 className="heading-pixel-2">Welcome Back</h2>
+          <p className="text-pixel-small">Sign in to access your system</p>
         </div>
+      </div>
+
+      <div className="w-full max-w-md flex-pixel-col animate-pixel-slide container-pixel-narrow">
 
         {/* Login Form */}
-        <Card className="enterprise-card">
+        <Card className="pixel-card hover-pixel">
           <CardHeader className="text-center">
-            <CardTitle className="text-xl text-gray-900">Sign In</CardTitle>
+            <CardTitle className="heading-pixel-3">Sign In</CardTitle>
           </CardHeader>
 
-          <CardContent className="space-y-6">
+          <CardContent className="flex-pixel-col">
             {error && (
-              <Alert className="status-error">
+              <Alert className="pixel-frame bg-destructive text-destructive-foreground">
                 <ExclamationTriangleIcon className="h-5 w-5" />
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription className="text-pixel-small">{error}</AlertDescription>
               </Alert>
             )}
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            <form onSubmit={handleSubmit(onSubmit)} className="flex-pixel-col">
               {/* Email Field */}
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+              <div className="flex-pixel-col">
+                <Label htmlFor="email" className="text-pixel">
                   Email Address
                 </Label>
                 <div className="relative">
-                  <EnvelopeIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <EnvelopeIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
                   <Input
                     id="email"
                     type="email"
                     placeholder="Enter your email"
                     className={cn(
-                      "input-field pl-10",
-                      errors.email && "border-red-300 focus:border-red-500 focus:ring-red-500"
+                      "input-pixel pl-10",
+                      errors.email && "border-destructive focus:border-destructive focus:ring-destructive"
                     )}
                     {...register('email')}
                   />
                 </div>
                 {errors.email && (
-                  <p className="text-sm text-red-600">{errors.email.message}</p>
+                  <p className="text-pixel-small text-destructive">{errors.email.message}</p>
                 )}
               </div>
 
               {/* Password Field */}
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+              <div className="flex-pixel-col">
+                <Label htmlFor="password" className="text-pixel">
                   Password
                 </Label>
                 <div className="relative">
-                  <LockClosedIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <LockClosedIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Enter your password"
                     className={cn(
-                      "input-field pl-10 pr-10",
-                      errors.password && "border-red-300 focus:border-red-500 focus:ring-red-500"
+                      "input-pixel pl-10 pr-10",
+                      errors.password && "border-destructive focus:border-destructive focus:ring-destructive"
                     )}
                     {...register('password')}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none hover-pixel"
                   >
                     {showPassword ? (
                       <EyeSlashIcon className="w-5 h-5" />
@@ -221,26 +228,26 @@ export default function LoginPage() {
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="text-sm text-red-600">{errors.password.message}</p>
+                  <p className="text-pixel-small text-destructive">{errors.password.message}</p>
                 )}
               </div>
 
               {/* Remember Me & Forgot Password */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center gap-pixel-xs">
                   <Checkbox
                     id="remember"
                     checked={rememberMe}
                     onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                    className="border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="border-border text-foreground focus:ring-foreground"
                   />
-                  <Label htmlFor="remember" className="text-sm text-gray-700">
+                  <Label htmlFor="remember" className="text-pixel-small">
                     Remember me
                   </Label>
                 </div>
                 <Link
                   href="/forgot-password"
-                  className="text-sm text-blue-600 hover:text-blue-500 font-medium"
+                  className="text-pixel-small text-foreground hover:text-muted-foreground hover-pixel"
                 >
                   Forgot password?
                 </Link>
@@ -250,7 +257,7 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 disabled={!isValid || isLoading}
-                className="btn-primary w-full group"
+                className="btn-pixel w-full group hover-pixel"
               >
                 {isLoading ? (
                   <>
@@ -259,9 +266,9 @@ export default function LoginPage() {
                   </>
                 ) : (
                   <>
-                    <ShieldCheckIcon className="w-5 h-5 mr-2" />
+                    <ShieldCheckIcon className="w-4 h-4 mr-2" />
                     Sign In
-                    <ArrowRightIcon className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                    <ArrowRightIcon className="w-4 h-4 ml-2" />
                   </>
                 )}
               </Button>
@@ -270,45 +277,45 @@ export default function LoginPage() {
             {/* Divider */}
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-gray-200" />
+                <span className="w-full border-t border-border" />
               </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="bg-white px-4 text-gray-500">Demo Accounts</span>
+              <div className="relative flex justify-center">
+                <span className="bg-card space-pixel-sm text-pixel-small">Demo Accounts</span>
               </div>
             </div>
 
             {/* Demo Login Buttons */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-pixel-sm">
               <Button
                 type="button"
                 onClick={() => handleDemoLogin('ADMIN')}
-                className="btn-secondary text-sm py-2"
+                className="btn-pixel-secondary hover-pixel"
               >
                 Admin
               </Button>
               <Button
                 type="button"
                 onClick={() => handleDemoLogin('LECTURER')}
-                className="btn-secondary text-sm py-2"
+                className="btn-pixel-secondary hover-pixel"
               >
                 Lecturer
               </Button>
               <Button
                 type="button"
                 onClick={() => handleDemoLogin('STUDENT')}
-                className="btn-secondary text-sm py-2"
+                className="btn-pixel-secondary hover-pixel"
               >
                 Student
               </Button>
             </div>
 
             {/* Sign Up Link */}
-            <div className="text-center pt-4 border-t border-gray-100">
-              <p className="text-sm text-gray-600">
+            <div className="text-center pt-4 border-t border-border">
+              <p className="text-pixel-small">
                 Don't have an account?{' '}
                 <Link
                   href="/register"
-                  className="text-blue-600 hover:text-blue-500 font-medium inline-flex items-center"
+                  className="text-foreground hover:text-muted-foreground hover-pixel inline-flex items-center"
                 >
                   Create account
                   <UserPlusIcon className="ml-1 w-4 h-4" />
@@ -320,9 +327,9 @@ export default function LoginPage() {
 
         {/* Security Notice */}
         <div className="text-center">
-          <p className="text-sm text-gray-500">
+          <p className="text-pixel-small text-muted-foreground">
             <ShieldCheckIcon className="w-4 h-4 inline mr-1" />
-            Secured with enterprise-grade encryption
+            Secured with enterprise encryption
           </p>
         </div>
       </div>

@@ -27,7 +27,8 @@
       "Bash(netstat:*)",
       "Bash(lsof:*)",
       "Bash(xargs kill:*)",
-      "Bash(npm cache clean:*)"
+      "Bash(npm cache clean:*)",
+      "Bash(rg:*)"
     ],
     "deny": [],
     "ask": []

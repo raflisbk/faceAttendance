@@ -7,29 +7,32 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const labelVariants = cva(
-  "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+  "text-pixel font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
   {
     variants: {
       variant: {
-        default: "text-slate-700 dark:text-slate-300",
-        secondary: "text-slate-600 dark:text-slate-400", 
-        muted: "text-slate-500 dark:text-slate-500",
-        destructive: "text-red-600 dark:text-red-400",
-        success: "text-green-600 dark:text-green-400",
-        warning: "text-yellow-600 dark:text-yellow-400",
-        info: "text-blue-600 dark:text-blue-400",
-        // Blackboard theme variants
-        chalk: "text-slate-800 dark:text-slate-200 font-semibold",
-        chalkBold: "text-slate-900 dark:text-slate-100 font-bold",
-        chalkMuted: "text-slate-600 dark:text-slate-400",
+        default: "text-foreground",
+        secondary: "text-muted-foreground",
+        muted: "text-muted-foreground",
+        destructive: "text-destructive",
+        success: "text-foreground",
+        warning: "text-foreground",
+        info: "text-foreground",
+        // Pixel theme variants
+        pixel: "text-foreground",
+        pixelBold: "text-foreground font-bold",
+        pixelMuted: "text-muted-foreground",
+        chalk: "text-foreground",
+        chalkBold: "text-foreground font-bold",
+        chalkMuted: "text-muted-foreground",
         // Required field variant
-        required: "text-slate-700 dark:text-slate-300 after:content-['*'] after:text-red-500 after:ml-1"
+        required: "text-foreground after:content-['*'] after:text-destructive after:ml-1"
       },
       size: {
-        default: "text-sm",
-        sm: "text-xs",
-        lg: "text-base",
-        xl: "text-lg"
+        default: "text-pixel",
+        sm: "text-pixel-small",
+        lg: "text-pixel",
+        xl: "text-pixel"
       }
     },
     defaultVariants: {
@@ -51,7 +54,7 @@ const Label = React.forwardRef<
   const labelVariant = required ? "required" : variant
 
   return (
-    <div className="space-y-1">
+    <div className="flex-pixel-col">
       <LabelPrimitive.Root
         ref={ref}
         className={cn(labelVariants({ variant: labelVariant, size }), className)}
@@ -61,7 +64,7 @@ const Label = React.forwardRef<
         {children}
       </LabelPrimitive.Root>
       {description && (
-        <p className="text-xs text-slate-500 dark:text-slate-400">
+        <p className="text-pixel-small text-muted-foreground">
           {description}
         </p>
       )}

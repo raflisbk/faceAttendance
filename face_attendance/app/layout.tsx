@@ -1,15 +1,18 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Kalam } from 'next/font/google'
+import { JetBrains_Mono, Space_Mono } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
 import { Toaster } from '@/components/ui/toaster'
 import { cn } from '@/lib/utils'
 
-const inter = Inter({ subsets: ['latin'] })
-const kalam = Kalam({
+const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
-  weight: ['300', '400', '700'],
-  variable: '--font-chalk'
+  variable: '--font-mono'
+})
+const spaceMono = Space_Mono({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-space'
 })
 
 export const metadata: Metadata = {
@@ -36,8 +39,8 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#0f172a' },
+    { media: '(prefers-color-scheme: light)', color: '#000000' },
+    { media: '(prefers-color-scheme: dark)', color: '#000000' },
   ],
 }
 
@@ -56,10 +59,10 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
-      <body className={cn(inter.className, kalam.variable, "antialiased blackboard-bg chalk-text")}>
+      <body className={cn(jetbrainsMono.className, spaceMono.variable, "antialiased pixel-bg text-pixel")}>
         <Providers>
           <Toaster>
-            <div className="animate-fade-in">
+            <div className="animate-pixel-fade pixel-container">
               {children}
             </div>
           </Toaster>
