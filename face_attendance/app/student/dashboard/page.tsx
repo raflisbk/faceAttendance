@@ -169,16 +169,21 @@ export default function StudentDashboard() {
   }
 
   return (
-    <div className="min-h-screen pixel-bg space-pixel-md">
-      {/* Home Button */}
-      <Link href="/" className="absolute top-pixel-md right-pixel-md z-50">
-        <Button variant="outline" size="sm" className="btn-pixel gap-pixel-xs">
-          <Home className="w-pixel h-pixel" />
-          Home
-        </Button>
-      </Link>
+    <div className="min-h-screen pixel-bg">
+      {/* Header Area */}
+      <div className="relative">
+        {/* Header with FaceAttend text */}
+        <div className="flex items-center justify-start h-20 px-12">
+          <Link href="/" className="no-underline">
+            <h1 className="heading-pixel-2 hover-pixel cursor-pointer mb-0">FaceAttend</h1>
+          </Link>
+        </div>
 
-      <div className="relative container-pixel">
+        {/* Header Separator */}
+        <div className="w-full h-px bg-white pixel-shadow"></div>
+      </div>
+
+      <div className="relative container-pixel" style={{minHeight: 'calc(100vh - 5rem)', paddingTop: '2rem'}}>
         {/* Header */}
         <div className="space-pixel-lg">
           <h1 className="heading-pixel-1">

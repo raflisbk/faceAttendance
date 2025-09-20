@@ -68,6 +68,7 @@ export default function RegisterPage() {
             onBack={handleBackStep}
             {...(registrationData.registrationId && { registrationId: registrationData.registrationId })}
             initialData={registrationData.step2}
+            step1Data={registrationData.step1}
           />
         )
       case 3:
@@ -92,14 +93,23 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen pixel-bg relative overflow-hidden space-pixel-md flex items-center justify-center">
-      {/* Home Button */}
-      <Link href="/" className="absolute top-pixel-md right-pixel-md z-50">
-        <Button variant="outline" size="sm" className="btn-pixel gap-pixel-xs">
-          <Home className="w-pixel h-pixel" />
-          Home
-        </Button>
-      </Link>
+    <div className="min-h-screen pixel-bg">
+      {/* Header Area */}
+      <div className="relative">
+        {/* Header with FaceAttend text */}
+        <div className="flex items-center justify-between h-20 px-12">
+          <Link href="/" className="no-underline">
+            <h1 className="heading-pixel-2 hover-pixel cursor-pointer mb-0">FaceAttend</h1>
+          </Link>
+          <h1 className="heading-pixel-2 mb-0">Join the System</h1>
+        </div>
+
+        {/* Header Separator */}
+        <div className="w-full h-px bg-white pixel-shadow"></div>
+      </div>
+
+      <div className="relative overflow-hidden space-pixel-md flex items-center justify-center" style={{minHeight: 'calc(100vh - 5rem)', paddingTop: '2rem'}}>
+        {/* Main Content */}
 
       {/* Pixel Background */}
 
@@ -147,50 +157,30 @@ export default function RegisterPage() {
       </div>
 
       <div className="relative w-full max-w-2xl container-pixel">
-        {/* Pixel Header */}
+        {/* Welcome Section */}
         <div className="text-center space-pixel-lg relative">
-          {/* Pixel icon */}
-          <div className="relative inline-block space-pixel-lg">
-            <div className="w-24 h-24 pixel-card flex items-center justify-center pixel-shadow hover-pixel">
-              <Palette className="w-10 h-10 text-foreground" />
-            </div>
-            {/* Pixel particles around icon */}
-            <div className="absolute -top-2 -right-2 w-2 h-2 bg-foreground animate-pixel-blink"></div>
-            <div className="absolute -bottom-3 -left-3 w-2 h-2 bg-foreground animate-pixel-blink" style={{animationDelay: '0.5s'}}></div>
-            <div className="absolute top-3 right-10 w-2 h-2 bg-foreground animate-pixel-blink" style={{animationDelay: '1s'}}></div>
-            <div className="absolute bottom-5 left-8 w-2 h-2 bg-foreground animate-pixel-blink" style={{animationDelay: '1.5s'}}></div>
+          {/* Main welcome message */}
+          <div className="space-pixel-lg">
+            <h2 className="heading-pixel-1 space-pixel-sm animate-pixel-fade">
+              Begin Your Journey
+            </h2>
+            <p className="text-pixel space-pixel-md">
+              with our recognition system
+            </p>
           </div>
-
-          {/* Pixel title */}
-          <h1 className="heading-pixel-1 space-pixel-md animate-pixel-fade">
-            Join the System
-          </h1>
-
-          {/* Pixel decorative line */}
-          <div className="flex justify-center items-center space-pixel-md">
-            <div className="w-20 h-px bg-foreground"></div>
-            <Sparkles className="mx-4 w-6 h-6 text-foreground animate-pixel-blink" />
-            <div className="w-20 h-px bg-foreground"></div>
-          </div>
-
-          <p className="text-pixel">
-            Begin your journey with our recognition system
-          </p>
-          <p className="text-pixel-small text-muted-foreground margin-pixel-xs">
-            "Every journey starts with a single step"
-          </p>
         </div>
 
-        {/* Pixel Progress */}
+        {/* Registration Progress */}
         <div className="space-pixel-lg relative">
-          {/* Pixel frame */}
-          <div className="absolute -top-4 -left-4 -right-4 -bottom-4 border border-border pointer-events-none"></div>
-          <div className="pixel-card space-pixel-md">
-            <h3 className="text-center heading-pixel-3 space-pixel-md flex items-center justify-center">
-              <Camera className="mr-3 w-5 h-5" />
-              Your Registration Journey
-              <Camera className="ml-3 w-5 h-5" />
-            </h3>
+          <div className="pixel-card space-pixel-lg">
+            <div className="text-center space-pixel-md">
+              <h3 className="heading-pixel-2 space-pixel-sm">
+                Registration Progress
+              </h3>
+              <p className="text-pixel-small text-muted-foreground">
+                Complete each step to join our system
+              </p>
+            </div>
             <RegistrationProgress
               currentStep={currentStep}
               totalSteps={4}
@@ -211,6 +201,7 @@ export default function RegisterPage() {
             {renderStep()}
           </CardContent>
         </Card>
+      </div>
       </div>
     </div>
   )

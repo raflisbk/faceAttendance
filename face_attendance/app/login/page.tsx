@@ -19,12 +19,10 @@ import {
   EyeSlashIcon,
   EnvelopeIcon,
   LockClosedIcon,
-  CameraIcon,
   ExclamationTriangleIcon,
   ArrowRightIcon,
   UserPlusIcon,
-  ShieldCheckIcon,
-  HomeIcon
+  ShieldCheckIcon
 } from '@heroicons/react/24/outline'
 import { cn } from '@/lib/utils'
 import { ApiClient } from '@/lib/api-client'
@@ -81,8 +79,10 @@ export default function LoginPage() {
         const redirectPath = getRedirectPath(response.data.user.role, response.data.user.status)
         router.push(redirectPath)
       }
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.error || 'Login failed. Please try again.'
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error
+        ? (error as { response?: { data?: { error?: string } } }).response?.data?.error || 'Login failed. Please try again.'
+        : 'Login failed. Please try again.'
       setError(errorMessage)
       toast.error(errorMessage)
     } finally {
@@ -107,16 +107,6 @@ export default function LoginPage() {
     }
   }
 
-  const handleDemoLogin = async (role: 'ADMIN' | 'LECTURER' | 'STUDENT') => {
-    const demoCredentials = {
-      ADMIN: { email: 'admin@demo.com', password: 'demo123', rememberMe: false },
-      LECTURER: { email: 'lecturer@demo.com', password: 'demo123', rememberMe: false },
-      STUDENT: { email: 'student@demo.com', password: 'demo123', rememberMe: false }
-    }
-
-    const credential = demoCredentials[role]
-    await onSubmit(credential)
-  }
 
   if (isLoading) {
     return (
@@ -132,33 +122,24 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen pixel-bg flex items-center justify-center space-pixel-md">
-      {/* Home Button */}
-      <Link href="/" className="absolute top-pixel-md right-pixel-md">
-        <Button variant="outline" size="sm" className="btn-pixel gap-pixel-xs">
-          <HomeIcon className="w-pixel h-pixel" />
-          Home
-        </Button>
-      </Link>
-
-      {/* Header with FaceAttend and Welcome */}
-      <div className="absolute top-pixel-md left-pixel-md">
-        <Link href="/" className="flex items-center gap-pixel-xs hover-pixel">
-          <div className="w-8 h-8 bg-foreground pixel-border flex items-center justify-center">
-            <CameraIcon className="w-3 h-3 text-background" />
-          </div>
-          <h1 className="heading-pixel-3">FaceAttend</h1>
-        </Link>
-      </div>
-
-      <div className="absolute top-pixel-md left-1/2 transform -translate-x-1/2">
-        <div className="text-center">
-          <h2 className="heading-pixel-2">Welcome Back</h2>
-          <p className="text-pixel-small">Sign in to access your system</p>
+    <div className="min-h-screen pixel-bg">
+      {/* Header Area */}
+      <div className="relative">
+        {/* Header with FaceAttend text */}
+        <div className="flex items-center justify-between h-20 px-12">
+          <Link href="/" className="no-underline">
+            <h1 className="heading-pixel-2 hover-pixel cursor-pointer mb-0">FaceAttend</h1>
+          </Link>
+          <h1 className="heading-pixel-2 mb-0">Let's Go</h1>
         </div>
+
+        {/* Header Separator */}
+        <div className="w-full h-px bg-white pixel-shadow"></div>
       </div>
 
-      <div className="w-full max-w-md flex-pixel-col animate-pixel-slide container-pixel-narrow">
+      {/* Main Content Container */}
+      <div className="flex items-center justify-center px-4" style={{minHeight: 'calc(100vh - 5rem)', paddingTop: '2rem'}}>
+        <div className="w-full max-w-md flex-pixel-col animate-pixel-slide">
 
         {/* Login Form */}
         <Card className="pixel-card hover-pixel">
@@ -274,40 +255,6 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            {/* Divider */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center">
-                <span className="bg-card space-pixel-sm text-pixel-small">Demo Accounts</span>
-              </div>
-            </div>
-
-            {/* Demo Login Buttons */}
-            <div className="grid grid-cols-3 gap-pixel-sm">
-              <Button
-                type="button"
-                onClick={() => handleDemoLogin('ADMIN')}
-                className="btn-pixel-secondary hover-pixel"
-              >
-                Admin
-              </Button>
-              <Button
-                type="button"
-                onClick={() => handleDemoLogin('LECTURER')}
-                className="btn-pixel-secondary hover-pixel"
-              >
-                Lecturer
-              </Button>
-              <Button
-                type="button"
-                onClick={() => handleDemoLogin('STUDENT')}
-                className="btn-pixel-secondary hover-pixel"
-              >
-                Student
-              </Button>
-            </div>
 
             {/* Sign Up Link */}
             <div className="text-center pt-4 border-t border-border">
@@ -325,12 +272,12 @@ export default function LoginPage() {
           </CardContent>
         </Card>
 
-        {/* Security Notice */}
+        {/* Credit */}
         <div className="text-center">
           <p className="text-pixel-small text-muted-foreground">
-            <ShieldCheckIcon className="w-4 h-4 inline mr-1" />
-            Secured with enterprise encryption
+            Created by Mohamad Rafli Agung Subekti
           </p>
+        </div>
         </div>
       </div>
     </div>

@@ -67,15 +67,15 @@ export default function HomePage() {
       {/* Responsive Enterprise Header */}
       <header className="header-professional">
         <div className="container-max">
-          <div className="flex items-center justify-between h-16 sm:h-20">
+          <div className="flex items-center justify-between h-16 sm:h-20 px-12">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               className="flex items-center"
             >
-              <div>
-                <h1 className="heading-pixel-2">FaceAttend</h1>
-              </div>
+              <Link href="/" className="no-underline">
+                <h1 className="heading-pixel-2 hover-pixel cursor-pointer">FaceAttend</h1>
+              </Link>
             </motion.div>
 
             <nav className="hidden lg:flex items-center space-x-8">
@@ -103,6 +103,9 @@ export default function HomePage() {
         </div>
       </header>
 
+      {/* Header Separator */}
+      <div className="w-full h-px bg-white pixel-shadow"></div>
+
       {/* Responsive Hero Section */}
       <section className="relative py-12 sm:py-16 lg:py-24 xl:py-32 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-transparent to-purple-50/30"></div>
@@ -114,28 +117,25 @@ export default function HomePage() {
               transition={{ duration: 0.8, ease: "easeOut" }}
               className="hero-content space-y-6 sm:space-y-8 lg:space-y-10"
             >
-              <div className="space-y-6">
+              <div className="space-y-8 text-center lg:text-left max-w-5xl mx-auto lg:mx-0">
 
-                <h1 className="heading-1 max-w-4xl">
-                  <span className="text-gradient">Revolutionary</span> Face Recognition
+                <h1 className="heading-pixel-1 leading-tight">
+                  <span className="text-foreground">Revolutionary</span>
                   <br />
-                  <span className="text-gray-900">Attendance Platform</span>
+                  <span className="text-foreground">Face Recognition</span>
+                  <br />
+                  <span className="text-foreground">Attendance Platform</span>
                 </h1>
 
-                <p className="text-large max-w-3xl leading-relaxed font-medium">
+                <p className="text-pixel leading-relaxed max-w-4xl mx-auto lg:mx-0">
                   Transform your institution with AI-powered attendance management.
+                  <br />
                   Enterprise-grade security, real-time analytics, and seamless user experience
+                  <br />
                   trusted by leading organizations worldwide.
                 </p>
               </div>
 
-              <div className="flex justify-center">
-                <Link href="/attendance/check-in">
-                  <Button className="btn-ghost">
-                    Start Recognition
-                  </Button>
-                </Link>
-              </div>
 
             </motion.div>
 
@@ -229,6 +229,21 @@ export default function HomePage() {
                 <span className="text-pixel">99.9% Uptime</span>
               </div>
             </div>
+          </motion.div>
+
+          {/* Start Recognition Button */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+            viewport={{ once: true }}
+            className="mt-64 text-center"
+          >
+            <Link href="/attendance/check-in">
+              <Button className="btn-ghost">
+                Start Recognition
+              </Button>
+            </Link>
           </motion.div>
         </div>
       </section>

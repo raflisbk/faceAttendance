@@ -82,12 +82,12 @@ const RegistrationProgress: React.FC<RegistrationProgressProps> = ({
       </div>
 
       {/* Step Labels */}
-      <div className="flex justify-between text-xs">
+      <div className="flex justify-between text-xs mt-8">
         {steps.map((step, index) => (
           <div
             key={index}
             className={cn(
-              "text-center font-medium max-w-[80px]",
+              "text-center font-medium flex-1 px-1",
               index < currentStep
                 ? "text-gray-800 dark:text-gray-200"
                 : index === currentStep - 1
@@ -95,7 +95,7 @@ const RegistrationProgress: React.FC<RegistrationProgressProps> = ({
                 : "text-gray-400 dark:text-gray-600"
             )}
           >
-            {step}
+            <span className="block break-words text-xs leading-tight">{step}</span>
           </div>
         ))}
       </div>

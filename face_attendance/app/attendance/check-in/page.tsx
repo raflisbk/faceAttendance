@@ -2,6 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -283,12 +284,21 @@ export default function CheckInPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 p-6">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_0%,_rgba(15,23,42,0.8)_100%)]" />
-      <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:60px_60px]" />
-      
-      <div className="relative max-w-6xl mx-auto">
+    <div className="min-h-screen pixel-bg">
+      {/* Header Area */}
+      <div className="relative">
+        {/* Header with FaceAttend text */}
+        <div className="flex items-center justify-start h-20 px-12">
+          <Link href="/" className="no-underline">
+            <h1 className="heading-pixel-2 hover-pixel cursor-pointer mb-0">FaceAttend</h1>
+          </Link>
+        </div>
+
+        {/* Header Separator */}
+        <div className="w-full h-px bg-white pixel-shadow"></div>
+      </div>
+
+      <div className="relative max-w-6xl mx-auto" style={{minHeight: 'calc(100vh - 5rem)', paddingTop: '2rem', padding: '2rem 1.5rem 1.5rem 1.5rem'}}>
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>

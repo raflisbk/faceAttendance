@@ -28,7 +28,9 @@
       "Bash(lsof:*)",
       "Bash(xargs kill:*)",
       "Bash(npm cache clean:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(set TURBOPACK=0)",
+      "Bash(next dev)"
     ],
     "deny": [],
     "ask": []

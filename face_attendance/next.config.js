@@ -62,9 +62,9 @@ const nextConfig = {
       return config;
     }
 
-    // Handle face-api.js - exclude from server builds
+    // Handle face-api.js and tesseract.js - exclude from server builds
     if (isServer) {
-      config.externals = [...(config.externals || []), '@vladmandic/face-api'];
+      config.externals = [...(config.externals || []), '@vladmandic/face-api', 'tesseract.js'];
     }
 
     if (!isServer) {

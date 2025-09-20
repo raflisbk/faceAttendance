@@ -173,14 +173,21 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen pixel-bg space-pixel-md">
-      {/* Home Button */}
-      <Link href="/" className="absolute top-pixel-md right-pixel-md z-50">
-        <Button variant="outline" size="sm" className="btn-pixel gap-pixel-xs">
-          <Home className="w-pixel h-pixel" />
-          Home
-        </Button>
-      </Link>
+    <div className="min-h-screen pixel-bg">
+      {/* Header Area */}
+      <div className="relative">
+        {/* Header with FaceAttend text */}
+        <div className="flex items-center justify-start h-20 px-12">
+          <Link href="/" className="no-underline">
+            <h1 className="heading-pixel-2 hover-pixel cursor-pointer mb-0">FaceAttend</h1>
+          </Link>
+        </div>
+
+        {/* Header Separator */}
+        <div className="w-full h-px bg-white pixel-shadow"></div>
+      </div>
+
+      <div className="space-pixel-md" style={{minHeight: 'calc(100vh - 5rem)', paddingTop: '2rem'}}>
 
       {/* Pixel Particles */}
       <div className="absolute inset-0 pointer-events-none">
@@ -464,6 +471,7 @@ export default function AdminDashboard() {
             </div>
           </TabsContent>
         </Tabs>
+      </div>
       </div>
     </div>
   )
