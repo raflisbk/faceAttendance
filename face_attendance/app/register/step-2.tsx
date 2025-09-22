@@ -29,6 +29,14 @@ interface DocumentData {
   ktmText?: string
 }
 
+interface OCREditData {
+  name: string
+  studentId: string
+  university: string
+  program: string
+  extractedText: string
+}
+
 interface RegistrationStep2Props {
   onNext: (data: DocumentData) => void
   onBack: () => void
@@ -45,11 +53,112 @@ export function RegistrationStep2({ onNext, onBack, initialData, step1Data }: Re
   const [isLoading, setIsLoading] = useState(false)
   const [ocrProgress, setOcrProgress] = useState<{ [key: string]: number }>({})
   const [ocrResults, setOcrResults] = useState<{ [key: string]: string }>({})
+  const [ocrEditData, setOcrEditData] = useState<OCREditData>({
+    name: '',
+    studentId: '',
+    university: '',
+    program: '',
+    extractedText: ''
+  })
+  const [showOcrEditor, setShowOcrEditor] = useState(false)
+  const [ocrDataEdited, setOcrDataEdited] = useState(false)
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
 
   const ktmInputRef = useRef<HTMLInputElement>(null)
   const toast = usePixelToast()
   const { user, token } = useAuthStore()
+
+
+  // Function to parse KTM text and extract structured information
+  const parseKTMText = (text: string): OCREditData => {
+    const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0)
+
+    let name = ''
+    let studentId = ''
+    let university = ''
+    let program = ''
+
+    // Common patterns for KTM parsing
+    const namePatterns = [
+      /nama\s*:?\s*(.+)/i,
+      /name\s*:?\s*(.+)/i,
+      /^([A-Z][a-z]+ [A-Z][a-z]+.*?)$/m
+    ]
+
+    const studentIdPatterns = [
+      /nim\s*:?\s*([A-Z0-9]+)/i,
+      /nomor\s*induk\s*:?\s*([A-Z0-9]+)/i,
+      /student\s*id\s*:?\s*([A-Z0-9]+)/i,
+      /([0-9]{8,})/
+    ]
+
+    const universityPatterns = [
+      /universitas\s+(.+)/i,
+      /university\s+(.+)/i,
+      /institut\s+(.+)/i
+    ]
+
+    const programPatterns = [
+      /program\s*studi\s*:?\s*(.+)/i,
+      /faculty\s*:?\s*(.+)/i,
+      /jurusan\s*:?\s*(.+)/i
+    ]
+
+    // Extract information using patterns
+    for (const line of lines) {
+      // Try to find name
+      if (!name) {
+        for (const pattern of namePatterns) {
+          const match = line.match(pattern)
+          if (match && match[1] && match[1].length > 2) {
+            name = match[1].trim()
+            break
+          }
+        }
+      }
+
+      // Try to find student ID
+      if (!studentId) {
+        for (const pattern of studentIdPatterns) {
+          const match = line.match(pattern)
+          if (match && match[1]) {
+            studentId = match[1].trim()
+            break
+          }
+        }
+      }
+
+      // Try to find university
+      if (!university) {
+        for (const pattern of universityPatterns) {
+          const match = line.match(pattern)
+          if (match && match[1]) {
+            university = match[1].trim()
+            break
+          }
+        }
+      }
+
+      // Try to find program
+      if (!program) {
+        for (const pattern of programPatterns) {
+          const match = line.match(pattern)
+          if (match && match[1]) {
+            program = match[1].trim()
+            break
+          }
+        }
+      }
+    }
+
+    return {
+      name,
+      studentId,
+      university,
+      program,
+      extractedText: text
+    }
+  }
 
   const performOCR = async (file: File, documentType: string) => {
     try {
@@ -66,6 +175,13 @@ export function RegistrationStep2({ onNext, onBack, initialData, step1Data }: Re
 
       const extractedText = result.data.text.trim()
       setOcrResults(prev => ({ ...prev, [documentType]: extractedText }))
+
+      // Parse OCR results into structured data
+      if (documentType === 'ktm') {
+        const parsedData = parseKTMText(extractedText)
+        setOcrEditData(parsedData)
+        setShowOcrEditor(true)
+      }
 
       // Check document quality first
       if (extractedText.length < 20) {
@@ -192,8 +308,8 @@ export function RegistrationStep2({ onNext, onBack, initialData, step1Data }: Re
     setDocumentData(prev => ({ ...prev, [documentType]: file }))
     setErrors(prev => ({ ...prev, [documentType]: '' }))
 
-    // Perform OCR for image documents only (not PDF or selfie)
-    if (documentType !== 'selfie' && file.type.startsWith('image/')) {
+    // Perform OCR for image documents only (not PDF)
+    if (file.type.startsWith('image/')) {
       await performOCR(file, documentType)
     } else if (file.type === 'application/pdf') {
       // For PDF files, show a message that OCR is not available
@@ -210,11 +326,20 @@ export function RegistrationStep2({ onNext, onBack, initialData, step1Data }: Re
       return
     }
 
-    // Check for OCR errors
+    // Check for OCR errors, but skip if user has manually edited OCR data
     const hasErrors = Object.values(errors).some(error => error !== '')
-    if (hasErrors) {
-      toast.error('Please resolve document validation errors before continuing')
+    if (hasErrors && !ocrDataEdited) {
+      toast.error('Please resolve document validation errors before continuing, or edit the OCR results manually')
       return
+    }
+
+    // If OCR data was manually edited, validate minimum required fields
+    if (ocrDataEdited) {
+      if (!ocrEditData.name.trim() || !ocrEditData.studentId.trim()) {
+        toast.error('Name and Student ID are required when manually editing OCR results')
+        setShowOcrEditor(true)
+        return
+      }
     }
 
     // Validate that we have user data from step 1
@@ -226,61 +351,38 @@ export function RegistrationStep2({ onNext, onBack, initialData, step1Data }: Re
     setIsLoading(true)
 
     try {
-      // Create FormData for file upload
-      const formData = new FormData()
+      // Get registration ID from step 1 data
+      const registrationId = step1Data?.registrationId
 
-      // Add KTM file
-      formData.append('ktm', documentData.ktm)
-
-      // Add OCR results
-      if (ocrResults.ktm) {
-        formData.append('ktmText', ocrResults.ktm)
+      if (!registrationId) {
+        throw new Error('Registration ID not found. Please restart registration from step 1.')
       }
 
-      // Get user ID from step 1 data (should be available if step 1 completed successfully)
-      const userId = step1Data?.userId
+      // Convert file to base64 for temporary storage (no Cloudinary upload yet)
+      const fileBuffer = await documentData.ktm.arrayBuffer()
+      const base64Data = Buffer.from(fileBuffer).toString('base64')
 
-      if (!userId) {
-        throw new Error('User ID not found. Please restart registration from step 1.')
-      }
+      toast.success('Student ID Card processed successfully!', 'Processing Complete')
 
-      formData.append('userId', userId)
-
-      // Upload to API
-      const response = await fetch('/api/registration/documents', {
-        method: 'POST',
-        headers: {
-          ...(token && { 'Authorization': `Bearer ${token}` })
+      // Prepare document data for temporary storage (no upload yet)
+      const documentInfo = {
+        registrationId,
+        fileName: documentData.ktm.name,
+        fileSize: documentData.ktm.size,
+        mimeType: documentData.ktm.type,
+        documentType: 'STUDENT_ID',
+        fileData: base64Data, // Store file data temporarily
+        ocrData: showOcrEditor ? ocrEditData : {
+          extractedText: ocrResults.ktm || ''
         },
-        body: formData,
-      })
-
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Upload failed')
+        processedAt: new Date().toISOString()
       }
 
-      toast.success('Student ID Card uploaded successfully!', 'Upload Complete')
-
-      // Verify upload in Cloudinary (optional during registration)
-      if (result.publicId) {
-        try {
-          const verification = await verifyCloudinaryUpload(result.publicId)
-          if (verification.exists) {
-            toast.info('Upload verified on cloud storage', 'Verification Complete')
-          }
-        } catch (error) {
-          // Ignore verification errors during registration
-          console.log('Cloudinary verification skipped during registration')
-        }
-      }
-
-      // Pass the result to next step
+      // Pass the document info to next step (upload to Cloudinary will happen at final step)
       const dataWithUploadInfo = {
         ...documentData,
-        ktmText: ocrResults.ktm,
-        uploadResult: result
+        ktmText: showOcrEditor ? JSON.stringify(ocrEditData) : ocrResults.ktm,
+        document: documentInfo
       }
 
       onNext(dataWithUploadInfo)
@@ -297,7 +399,7 @@ export function RegistrationStep2({ onNext, onBack, initialData, step1Data }: Re
     documentType: keyof DocumentData,
     label: string,
     description: string,
-    inputRef: React.RefObject<HTMLInputElement>
+    inputRef: React.RefObject<HTMLInputElement | null>
   ) => {
     const file = documentData[documentType] as File | null
     const progress = ocrProgress[documentType] || 0
@@ -359,16 +461,30 @@ export function RegistrationStep2({ onNext, onBack, initialData, step1Data }: Re
                   <div className="mt-4 p-3 bg-muted rounded text-left">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-pixel-small font-medium">Document Analysis:</p>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          // Show full text in modal or expand
-                        }}
-                      >
-                        <EyeIcon className="w-4 h-4" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setShowOcrEditor(true)
+                          }}
+                          title="Edit OCR Results"
+                        >
+                          ✏️
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            // Show full text in modal or expand
+                          }}
+                          title="View Full Text"
+                        >
+                          <EyeIcon className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
 
                     {/* Document Quality Indicator */}
@@ -394,10 +510,25 @@ export function RegistrationStep2({ onNext, onBack, initialData, step1Data }: Re
                         <div className="flex items-center gap-2">
                           <div className={cn(
                             "w-3 h-3 rounded-full",
+                            ocrDataEdited ? "bg-blue-500" :
                             !hasError ? "bg-green-500" : "bg-red-500"
                           )}></div>
                           <span className="text-pixel-small">
-                            {!hasError ? "Information matches registration" : "Please verify details"}
+                            {ocrDataEdited ? "Manually edited - validation bypassed" :
+                             !hasError ? "Information matches registration" : "Please verify details"}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Manual Edit Status */}
+                    {ocrDataEdited && (
+                      <div className="mb-2">
+                        <p className="text-pixel-small font-medium">Status:</p>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                          <span className="text-pixel-small text-blue-400">
+                            OCR data has been manually reviewed and edited
                           </span>
                         </div>
                       </div>
@@ -448,6 +579,171 @@ export function RegistrationStep2({ onNext, onBack, initialData, step1Data }: Re
           'Student ID Card (KTM)',
           'Upload a clear photo of your Student ID Card for verification',
           ktmInputRef
+        )}
+
+        {/* OCR Results Editor */}
+        {showOcrEditor && (
+          <Card className="pixel-card hover-pixel">
+            <CardHeader>
+              <CardTitle className="heading-pixel-3 flex items-center justify-between">
+                <div className="flex items-center">
+                  <DocumentTextIcon className="w-4 h-4 mr-2" />
+                  Review OCR Results
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShowOcrEditor(false)}
+                >
+                  ✕
+                </Button>
+              </CardTitle>
+              <p className="text-pixel-small text-muted-foreground">
+                Please review and edit the information extracted from your Student ID Card
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="ocrName" className="text-pixel">
+                    Full Name <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="ocrName"
+                    value={ocrEditData.name}
+                    onChange={(e) => setOcrEditData(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Enter your full name"
+                    className={cn(
+                      "input-pixel",
+                      !ocrEditData.name.trim() && "border-red-500"
+                    )}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="ocrStudentId" className="text-pixel">
+                    Student ID (NIM) <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="ocrStudentId"
+                    value={ocrEditData.studentId}
+                    onChange={(e) => setOcrEditData(prev => ({ ...prev, studentId: e.target.value }))}
+                    placeholder="Enter your student ID"
+                    className={cn(
+                      "input-pixel",
+                      !ocrEditData.studentId.trim() && "border-red-500"
+                    )}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="ocrUniversity" className="text-pixel">
+                    University
+                  </Label>
+                  <Input
+                    id="ocrUniversity"
+                    value={ocrEditData.university}
+                    onChange={(e) => setOcrEditData(prev => ({ ...prev, university: e.target.value }))}
+                    placeholder="Enter your university name"
+                    className="input-pixel"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="ocrProgram" className="text-pixel">
+                    Program/Faculty
+                  </Label>
+                  <Input
+                    id="ocrProgram"
+                    value={ocrEditData.program}
+                    onChange={(e) => setOcrEditData(prev => ({ ...prev, program: e.target.value }))}
+                    placeholder="Enter your program or faculty"
+                    className="input-pixel"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ocrExtractedText" className="text-pixel">
+                  Extracted Text (Original OCR Result)
+                </Label>
+                <div className="relative">
+                  <textarea
+                    id="ocrExtractedText"
+                    value={ocrEditData.extractedText}
+                    onChange={(e) => setOcrEditData(prev => ({ ...prev, extractedText: e.target.value }))}
+                    placeholder="Full text extracted from the document"
+                    className="input-pixel min-h-[120px] resize-y"
+                    rows={5}
+                  />
+                </div>
+                <p className="text-pixel-small text-muted-foreground">
+                  This is the raw text extracted from your document. You can edit it if needed.
+                </p>
+              </div>
+
+              {/* Validation against step 1 data */}
+              {step1Data && (
+                <div className="p-4 bg-muted rounded-lg">
+                  <h4 className="text-pixel font-medium mb-2">Validation Check:</h4>
+                  <div className="space-y-1 text-pixel-small">
+                    <div className="flex items-center gap-2">
+                      <div className={cn(
+                        "w-3 h-3 rounded-full",
+                        ocrEditData.name.toLowerCase().includes(step1Data.name?.toLowerCase() || '') ||
+                        step1Data.name?.toLowerCase().includes(ocrEditData.name.toLowerCase())
+                          ? "bg-green-500" : "bg-orange-500"
+                      )}></div>
+                      <span>Name: {ocrEditData.name} vs {step1Data.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className={cn(
+                        "w-3 h-3 rounded-full",
+                        ocrEditData.studentId === step1Data.studentId ? "bg-green-500" : "bg-orange-500"
+                      )}></div>
+                      <span>Student ID: {ocrEditData.studentId} vs {step1Data.studentId}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    // Reset to original OCR results and clear edited state
+                    const originalData = parseKTMText(ocrResults.ktm || '')
+                    setOcrEditData(originalData)
+                    setOcrDataEdited(false)
+                    // Check if original data would have validation errors
+                    const detection = detectDocumentType(ocrResults.ktm || '')
+                    if (detection.confidence < 0.15) {
+                      setErrors(prev => ({ ...prev, ktm: 'Document type cannot be clearly determined. Please upload a clearer image of your Student ID Card.' }))
+                    } else {
+                      setErrors(prev => ({ ...prev, ktm: '' }))
+                    }
+                  }}
+                  className="btn-pixel flex-1"
+                >
+                  Reset to Original
+                </Button>
+                <Button
+                  onClick={() => {
+                    // Mark as edited and clear any validation errors
+                    setOcrDataEdited(true)
+                    setErrors(prev => ({ ...prev, ktm: '' }))
+                    toast.success('OCR results updated successfully')
+                    setShowOcrEditor(false)
+                  }}
+                  className="btn-pixel flex-1"
+                >
+                  Save Changes
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         )}
       </div>
 

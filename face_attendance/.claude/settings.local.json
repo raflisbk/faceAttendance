@@ -30,7 +30,9 @@
       "Bash(npm cache clean:*)",
       "Bash(rg:*)",
       "Bash(set TURBOPACK=0)",
-      "Bash(next dev)"
+      "Bash(next dev)",
+      "Bash(node:*)",
+      "Bash(npx tsx:*)"
     ],
     "deny": [],
     "ask": []

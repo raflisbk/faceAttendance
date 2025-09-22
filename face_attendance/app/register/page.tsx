@@ -8,6 +8,7 @@ import { RegistrationProgress } from '@/components/ui/progress'
 import { RegistrationStep1 } from './step-1'
 import { RegistrationStep2 } from './step-2'
 import { RegistrationStep3 } from './step-3'
+import { RegistrationStep4 } from './step-4'
 import { RegistrationComplete } from './complete'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -17,6 +18,7 @@ export interface RegistrationData {
   step1?: any
   step2?: any
   step3?: any
+  step4?: any
   registrationId?: string
 }
 
@@ -28,7 +30,9 @@ export default function RegisterPage() {
   const updateRegistrationData = (step: string, data: any) => {
     setRegistrationData(prev => ({
       ...prev,
-      [step]: data
+      [step]: data,
+      // Keep registrationId at top level
+      ...(data.registrationId && { registrationId: data.registrationId })
     }))
   }
 
@@ -49,6 +53,7 @@ export default function RegisterPage() {
     'Basic Info',
     'Document Upload',
     'Face Enrollment',
+    'Security Setup',
     'Complete'
   ]
 
@@ -78,9 +83,23 @@ export default function RegisterPage() {
             onBack={handleBackStep}
             {...(registrationData.registrationId && { registrationId: registrationData.registrationId })}
             initialData={registrationData.step3}
+            step1Data={registrationData.step1}
+            step2Data={registrationData.step2}
           />
         )
       case 4:
+        return (
+          <RegistrationStep4
+            onNext={(data) => handleStepComplete(4, data)}
+            onBack={handleBackStep}
+            {...(registrationData.registrationId && { registrationId: registrationData.registrationId })}
+            initialData={registrationData.step4}
+            step1Data={registrationData.step1}
+            step2Data={registrationData.step2}
+            step3Data={registrationData.step3}
+          />
+        )
+      case 5:
         return (
           <RegistrationComplete
             registrationData={registrationData}
@@ -183,7 +202,7 @@ export default function RegisterPage() {
             </div>
             <RegistrationProgress
               currentStep={currentStep}
-              totalSteps={4}
+              totalSteps={5}
               steps={steps}
             />
           </div>

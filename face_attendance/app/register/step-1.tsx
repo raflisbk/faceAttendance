@@ -67,14 +67,14 @@ export function RegistrationStep1({ onNext, initialData }: RegistrationStep1Prop
         throw new Error(result.error || 'Failed to create account')
       }
 
-      // Pass user data to next step
-      const dataWithUserId = {
+      // Pass registration data to next step
+      const dataWithRegistrationId = {
         ...data,
-        userId: result.user.id,
-        userAccount: result.user
+        registrationId: result.registrationId,
+        registrationData: result.data
       }
 
-      onNext(dataWithUserId)
+      onNext(dataWithRegistrationId)
 
     } catch (error) {
       console.error('Registration error:', error)

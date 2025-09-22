@@ -15,13 +15,13 @@ export interface FileValidationResult {
 
 export function validateFile(
   file: File,
-  allowedTypes: string[],
+  allowedTypes: readonly string[],
   maxSize: number
 ): FileValidationResult {
   // Check file type
   if (!allowedTypes.includes(file.type)) {
     const acceptedExtensions = allowedTypes
-      .map(type => type.split('/')[1].toUpperCase())
+      .map(type => type.split('/')[1]?.toUpperCase() || type)
       .join(', ')
     return {
       isValid: false,

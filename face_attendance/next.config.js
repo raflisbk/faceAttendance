@@ -1,17 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Performance optimizations
+  // Enhanced Performance optimizations
   serverExternalPackages: ['prisma', '@prisma/client'],
-  // Turbopack configuration
-  turbopack: {
-    resolveExtensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
-    rules: {
-      '*.svg': {
-        loaders: ['@svgr/webpack'],
-        as: '*.js',
-      },
-    },
-  },
   experimental: {
     // Performance optimizations
     optimizePackageImports: [
@@ -20,10 +10,19 @@ const nextConfig = {
       'framer-motion',
       '@tanstack/react-query',
       'zustand',
+      '@vladmandic/face-api',
+      'tesseract.js'
     ],
-    // Memory optimization
+    // Memory and performance optimization
     workerThreads: false,
     esmExternals: true,
+    optimizeServerReact: true,
+    serverComponentsExternalPackages: ['sharp', 'onnxruntime-node'],
+    // Enable concurrent features
+    appDir: true,
+    serverActions: true,
+    // Bundle analyzer for optimization
+    bundlePagesRouterDependencies: true,
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
@@ -49,11 +48,16 @@ const nextConfig = {
         pathname: '/**',
       },
     ],
-    // Image optimization
+    // Enhanced Image optimization
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     formats: ['image/webp', 'image/avif'],
-    minimumCacheTTL: 60,
+    minimumCacheTTL: 300, // 5 minutes
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    // Enable image optimization
+    unoptimized: false,
+    loader: 'default',
   },
   // Configure both webpack and turbopack
   webpack: (config, { dev, isServer, webpack }) => {
@@ -139,6 +143,19 @@ const nextConfig = {
           {
             key: 'Cache-Control',
             value: 'no-store, max-age=0',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+        ],
+      },
+      {
+        source: '/api/public/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=300, s-maxage=600', // 5min client, 10min CDN
           },
         ],
       },

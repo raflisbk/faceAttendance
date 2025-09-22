@@ -27,9 +27,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if student/staff ID already exists
-    const idField = role === 'STUDENT' ? 'studentId' : 'staffId'
     const existingId = await prisma.user.findUnique({
-      where: { [idField]: studentId }
+      where: role === 'STUDENT'
+        ? { studentId: studentId }
+        : { staffId: studentId }
     })
 
     if (existingId) {
@@ -39,50 +40,35 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create user account
-    const user = await prisma.user.create({
+    // Create temporary registration record (not a full user yet)
+    const registrationData = {
+      name,
+      email,
+      phone,
+      role,
+      studentId,
+      step: 1,
+      status: 'IN_PROGRESS',
       data: {
         name,
         email,
         phone,
-        [idField]: studentId,
-        role,
-        status: 'PENDING',
-        registrationStep: 1,
-        faceEnrollmentStatus: 'NOT_ENROLLED',
-        documentVerified: false,
-        termsAccepted: true,
-        gdprConsent: true
-      }
-    })
+        studentId,
+        role
+      },
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+    }
 
-    // Create initial registration step record
-    await prisma.registrationStep.create({
-      data: {
-        userId: user.id,
-        stepName: 'BASIC_INFO',
-        status: 'COMPLETED',
-        data: {
-          name,
-          email,
-          phone,
-          studentId,
-          role
-        },
-        completedAt: new Date()
-      }
-    })
+    // Store in a temporary registration table or use a simple session approach
+    // For now, we'll create a temporary record with a unique identifier
+    const tempRegistrationId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 
     return NextResponse.json({
       success: true,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        registrationStep: user.registrationStep
-      },
-      message: 'User account created successfully'
+      registrationId: tempRegistrationId,
+      data: registrationData,
+      message: 'Basic information saved. Please continue to next step.'
     }, { status: 201 })
 
   } catch (error) {

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { authenticateRequest } from '@/lib/auth-helpers'
 import { v2 as cloudinary } from 'cloudinary'
-import { Readable } from 'stream'
 
 // Configure Cloudinary
 cloudinary.config({
@@ -11,28 +10,22 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 })
 
-// Convert buffer to stream for Cloudinary upload
-function bufferToStream(buffer: Buffer): Readable {
-  const readable = new Readable({
-    read() {
-      this.push(buffer)
-      this.push(null)
-    }
-  })
-  return readable
-}
 
-// Upload file to Cloudinary (optimized for speed)
+// Upload file to Cloudinary (simplified approach)
 async function uploadToCloudinary(
   buffer: Buffer,
   fileName: string,
   folder: string,
   fileType: string
 ): Promise<{ url: string; publicId: string }> {
-  return new Promise((resolve, reject) => {
+  try {
     // Different settings for images vs PDFs
     const isImage = fileType.startsWith('image/')
     const isPDF = fileType === 'application/pdf'
+
+    // Convert buffer to base64 data URI
+    const base64 = buffer.toString('base64')
+    const dataURI = `data:${fileType};base64,${base64}`
 
     const uploadOptions: any = {
       folder: `face-attendance/${folder}`,
@@ -49,42 +42,30 @@ async function uploadToCloudinary(
         { width: 800, height: 600, crop: 'limit' },
         { quality: 'auto:good' }
       ]
-      uploadOptions.eager = [
-        { width: 300, height: 300, crop: 'thumb', gravity: 'center' }
-      ]
-      uploadOptions.eager_async = true
     }
 
-    const stream = cloudinary.uploader.upload_stream(
-      uploadOptions,
-      (error, result) => {
-        if (error) {
-          reject(error)
-        } else if (result) {
-          resolve({
-            url: result.secure_url,
-            publicId: result.public_id
-          })
-        } else {
-          reject(new Error('Upload failed'))
-        }
-      }
-    )
+    const result = await cloudinary.uploader.upload(dataURI, uploadOptions)
 
-    bufferToStream(buffer).pipe(stream)
-  })
+    return {
+      url: result.secure_url,
+      publicId: result.public_id
+    }
+  } catch (error) {
+    console.error('Cloudinary upload error:', error)
+    throw error
+  }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
 
-    // For registration, get user ID from form data instead of auth
-    const userId = formData.get('userId') as string
+    // For registration, get registration ID from form data
+    const registrationId = formData.get('registrationId') as string
 
-    if (!userId) {
+    if (!registrationId) {
       return NextResponse.json(
-        { error: 'User ID is required for registration' },
+        { error: 'Registration ID is required for document upload' },
         { status: 400 }
       )
     }
@@ -120,92 +101,39 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Start database transaction
-    const result = await prisma.$transaction(async (tx) => {
-      // Upload KTM file to Cloudinary
-      const ktmUpload = await uploadToCloudinary(
-        Buffer.from(await ktmFile.arrayBuffer()),
-        ktmFile.name,
-        'student-id',
-        ktmFile.type
-      )
+    // Upload KTM file to Cloudinary
+    const ktmUpload = await uploadToCloudinary(
+      Buffer.from(await ktmFile.arrayBuffer()),
+      ktmFile.name,
+      'student-id',
+      ktmFile.type
+    )
 
-      // Save document to database
-      const document = await tx.document.create({
-        data: {
-          userId,
-          fileName: ktmFile.name,
-          filePath: ktmUpload.url,
-          fileSize: ktmFile.size,
-          mimeType: ktmFile.type,
-          documentType: 'STUDENT_ID',
-          ocrData: ktmText ? {
-            extractedText: ktmText,
-            extractedAt: new Date(),
-            confidence: 'auto-detected',
-            publicId: ktmUpload.publicId
-          } : { publicId: ktmUpload.publicId },
-          status: 'PENDING_VERIFICATION'
-        }
-      })
+    // Store document info temporarily (not in database yet)
+    const documentData = {
+      registrationId,
+      fileName: ktmFile.name,
+      filePath: ktmUpload.url,
+      fileSize: ktmFile.size,
+      mimeType: ktmFile.type,
+      documentType: 'STUDENT_ID',
+      ocrData: ktmText ? {
+        extractedText: ktmText,
+        extractedAt: new Date(),
+        confidence: 'auto-detected',
+        publicId: ktmUpload.publicId
+      } : { publicId: ktmUpload.publicId },
+      uploadedAt: new Date()
+    }
 
-      // Update user registration step
-      await tx.user.update({
-        where: { id: userId },
-        data: {
-          registrationStep: 3,
-          documentVerified: false // Will be verified by admin
-        }
-      })
-
-      // Update registration step record
-      await tx.registrationStep.upsert({
-        where: {
-          userId_stepName: {
-            userId,
-            stepName: 'DOCUMENT_UPLOAD'
-          }
-        },
-        update: {
-          status: 'COMPLETED',
-          data: {
-            document: {
-              id: document.id,
-              type: document.documentType,
-              fileName: document.fileName,
-              uploadedAt: document.createdAt,
-              cloudinaryUrl: ktmUpload.url,
-              publicId: ktmUpload.publicId
-            }
-          },
-          completedAt: new Date()
-        },
-        create: {
-          userId,
-          stepName: 'DOCUMENT_UPLOAD',
-          status: 'COMPLETED',
-          data: {
-            document: {
-              id: document.id,
-              type: document.documentType,
-              fileName: document.fileName,
-              uploadedAt: document.createdAt,
-              cloudinaryUrl: ktmUpload.url,
-              publicId: ktmUpload.publicId
-            }
-          },
-          completedAt: new Date()
-        }
-      })
-
-      return {
-        success: true,
-        document,
-        cloudinaryUrl: ktmUpload.url,
-        publicId: ktmUpload.publicId,
-        message: 'Student ID Card uploaded successfully'
-      }
-    })
+    const result = {
+      success: true,
+      registrationId,
+      document: documentData,
+      cloudinaryUrl: ktmUpload.url,
+      publicId: ktmUpload.publicId,
+      message: 'Student ID Card uploaded successfully. Continue to next step to complete registration.'
+    }
 
     return NextResponse.json(result, { status: 201 })
 
