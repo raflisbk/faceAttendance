@@ -682,3 +682,5 @@ export const AttendanceReport: React.FC<AttendanceReportProps> = ({
     </div>
   )
 }
+
+export default AttendanceReport

@@ -307,3 +307,5 @@ export function RegistrationStep3({
     </>
   )
 }
+
+export default RegistrationStep3

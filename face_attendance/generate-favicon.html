@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Favicon</title>
+</head>
+<body>
+    <canvas id="favicon" width="32" height="32" style="border: 1px solid black; image-rendering: pixelated;"></canvas>
+    <br><br>
+    <button onclick="downloadFavicon()">Download Favicon</button>
+
+    <script>
+        const canvas = document.getElementById('favicon');
+        const ctx = canvas.getContext('2d');
+
+        // Disable anti-aliasing for pixel perfect rendering
+        ctx.imageSmoothingEnabled = false;
+
+        // Function to draw pixel
+        function drawPixel(x, y, color = 'black') {
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, 1, 1);
+        }
+
+        // Clear canvas with white background
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, 32, 32);
+
+        // Face outline - pixel style
+        for(let i = 0; i < 2; i++) {
+            drawPixel(8 + i, 6);
+            drawPixel(22 + i, 6);
+            drawPixel(8 + i, 24);
+            drawPixel(22 + i, 24);
+        }
+
+        for(let i = 0; i < 12; i++) {
+            drawPixel(10 + i, 4);
+            drawPixel(10 + i, 26);
+        }
+
+        for(let i = 0; i < 16; i++) {
+            drawPixel(6, 8 + i);
+            drawPixel(24, 8 + i);
+        }
+
+        // Eyes
+        drawPixel(10, 10);
+        drawPixel(11, 10);
+        drawPixel(20, 10);
+        drawPixel(21, 10);
+
+        // Nose
+        drawPixel(15, 14);
+        drawPixel(16, 14);
+
+        // Mouth - smile
+        drawPixel(12, 18);
+        drawPixel(13, 18);
+        drawPixel(18, 18);
+        drawPixel(19, 18);
+
+        for(let i = 0; i < 4; i++) {
+            drawPixel(14 + i, 20);
+        }
+
+        // Face recognition frame corners
+        for(let i = 0; i < 4; i++) {
+            drawPixel(4 + i, 4);
+            drawPixel(24 + i, 4);
+            drawPixel(4 + i, 27);
+            drawPixel(24 + i, 27);
+        }
+
+        for(let i = 0; i < 4; i++) {
+            drawPixel(4, 4 + i);
+            drawPixel(27, 4 + i);
+            drawPixel(4, 24 + i);
+            drawPixel(27, 24 + i);
+        }
+
+        function downloadFavicon() {
+            // Create different sizes
+            const sizes = [16, 32, 180];
+
+            sizes.forEach(size => {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = size;
+                tempCanvas.height = size;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.imageSmoothingEnabled = false;
+
+                tempCtx.drawImage(canvas, 0, 0, size, size);
+
+                const link = document.createElement('a');
+                link.download = `favicon-${size}x${size}.png`;
+                link.href = tempCanvas.toDataURL();
+                link.click();
+            });
+
+            // Also download original 32x32
+            const link = document.createElement('a');
+            link.download = 'favicon.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+    </script>
+</body>
+</html>

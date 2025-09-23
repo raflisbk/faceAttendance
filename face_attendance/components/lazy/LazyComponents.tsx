@@ -119,7 +119,7 @@ export const LazyOCRProcessor = withLazyLoading(
 
 // Chart and Analytics Components (Heavy)
 export const LazyAttendanceChart = withLazyLoading(
-  () => import('@/components/charts/AttendanceChart'),
+  () => import('@/components/charts/AttendanceChart').then(mod => ({ default: mod.default })),
   () => (
     <div className="pixel-card">
       <div className="h-64 bg-muted rounded animate-pulse"></div>
@@ -128,7 +128,7 @@ export const LazyAttendanceChart = withLazyLoading(
 )
 
 export const LazyDashboardStats = withLazyLoading(
-  () => import('@/components/dashboard/DashboardStats'),
+  () => import('@/components/dashboard/DashboardStats').then(mod => ({ default: mod.default })),
   () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {Array.from({ length: 4 }).map((_, i) => (
@@ -140,28 +140,28 @@ export const LazyDashboardStats = withLazyLoading(
 
 // Form Components (Medium)
 export const LazyRegistrationStep1 = withLazyLoading(
-  () => import('@/app/register/step-1'),
+  () => import('@/app/register/step-1').then(mod => ({ default: mod.default })),
   PixelFormLoader
 )
 
 export const LazyRegistrationStep2 = withLazyLoading(
-  () => import('@/app/register/step-2'),
+  () => import('@/app/register/step-2').then(mod => ({ default: mod.default })),
   PixelFormLoader
 )
 
 export const LazyRegistrationStep3 = withLazyLoading(
-  () => import('@/app/register/step-3'),
+  () => import('@/app/register/step-3').then(mod => ({ default: mod.default })),
   PixelFormLoader
 )
 
 export const LazyRegistrationStep4 = withLazyLoading(
-  () => import('@/app/register/step-4'),
+  () => import('@/app/register/step-4').then(mod => ({ default: mod.default })),
   PixelFormLoader
 )
 
 // Admin Components (Medium)
 export const LazyUserManagement = withLazyLoading(
-  () => import('@/components/admin/UserManagement'),
+  () => import('@/components/admin/UserManagement').then(mod => ({ default: mod.default })),
   () => (
     <div className="space-y-4">
       <div className="h-12 bg-muted rounded w-1/3"></div>
@@ -175,7 +175,7 @@ export const LazyUserManagement = withLazyLoading(
 )
 
 export const LazySystemHealth = withLazyLoading(
-  () => import('@/components/admin/SystemHealth'),
+  () => import('@/components/admin/SystemHealth').then(mod => ({ default: mod.default })),
   () => (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {Array.from({ length: 3 }).map((_, i) => (
@@ -187,7 +187,7 @@ export const LazySystemHealth = withLazyLoading(
 
 // QR Code Component (Light but can be lazy)
 export const LazyQRCodeGenerator = withLazyLoading(
-  () => import('@/components/qr/QRCodeGenerator'),
+  () => import('@/components/attendance/QRCodeGenerator').then(mod => ({ default: mod.default })),
   () => (
     <div className="pixel-card flex items-center justify-center h-64">
       <div className="text-center space-y-2">
@@ -200,7 +200,7 @@ export const LazyQRCodeGenerator = withLazyLoading(
 
 // File Upload Components
 export const LazyFileUpload = withLazyLoading(
-  () => import('@/components/upload/FileUpload'),
+  () => import('@/components/ui/document-upload').then(mod => ({ default: mod.default })),
   () => (
     <div className="pixel-card">
       <div className="border-2 border-dashed border-muted-foreground rounded-lg p-8">
@@ -215,7 +215,7 @@ export const LazyFileUpload = withLazyLoading(
 
 // Report Components
 export const LazyReportGenerator = withLazyLoading(
-  () => import('@/components/reports/ReportGenerator'),
+  () => import('@/components/reports/AttendanceReports').then(mod => ({ default: mod.default })),
   () => (
     <div className="space-y-4">
       <div className="h-8 bg-muted rounded w-1/3"></div>
@@ -232,9 +232,7 @@ export const LazyReportGenerator = withLazyLoading(
 
 // Calendar Components (if you have them)
 export const LazyScheduleCalendar = withLazyLoading(
-  () => import('@/components/schedule/ScheduleCalendar').catch(() =>
-    import('@/components/ui/loading-spinner').then(mod => ({ default: mod.LoadingSpinner }))
-  ),
+  () => import('@/components/ui/loading-spinner').then(mod => ({ default: mod.LoadingSpinner })),
   () => (
     <div className="pixel-card">
       <div className="h-96 bg-muted rounded animate-pulse"></div>
@@ -244,7 +242,7 @@ export const LazyScheduleCalendar = withLazyLoading(
 
 // Data Table Component
 export const LazyDataTable = withLazyLoading(
-  () => import('@/components/ui/data-table'),
+  () => import('@/components/ui/data-table').then(mod => ({ default: mod.default })),
   () => (
     <div className="space-y-4">
       <div className="h-12 bg-muted rounded w-1/4"></div>

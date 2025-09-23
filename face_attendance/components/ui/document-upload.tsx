@@ -423,3 +423,5 @@ export function DocumentUpload({
     </Card>
   )
 }
+
+export default DocumentUpload

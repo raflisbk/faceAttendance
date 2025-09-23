@@ -281,3 +281,5 @@ export function RegistrationStep4({
     </>
   )
 }
+
+export default RegistrationStep4

@@ -206,3 +206,5 @@ export function AttendanceChart() {
     </div>
   )
 }
+
+export default AttendanceChart

@@ -787,3 +787,5 @@ export function RegistrationStep2({ onNext, onBack, initialData, step1Data }: Re
     </>
   )
 }
+
+export default RegistrationStep2

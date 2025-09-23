@@ -675,3 +675,5 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
     </div>
   )
 }
+
+export default DashboardStats

@@ -32,7 +32,8 @@
       "Bash(set TURBOPACK=0)",
       "Bash(next dev)",
       "Bash(node:*)",
-      "Bash(npx tsx:*)"
+      "Bash(npx tsx:*)",
+      "Bash(timeout:*)"
     ],
     "deny": [],
     "ask": []

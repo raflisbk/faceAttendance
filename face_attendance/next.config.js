@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Enhanced Performance optimizations
-  serverExternalPackages: ['prisma', '@prisma/client'],
+  serverExternalPackages: ['prisma', '@prisma/client', 'sharp', 'onnxruntime-node'],
   experimental: {
     // Performance optimizations
     optimizePackageImports: [
@@ -17,12 +17,10 @@ const nextConfig = {
     workerThreads: false,
     esmExternals: true,
     optimizeServerReact: true,
-    serverComponentsExternalPackages: ['sharp', 'onnxruntime-node'],
-    // Enable concurrent features
-    appDir: true,
-    serverActions: true,
-    // Bundle analyzer for optimization
-    bundlePagesRouterDependencies: true,
+    // Enable server actions
+    serverActions: {
+      allowedOrigins: ['localhost:3000']
+    }
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
@@ -58,46 +56,6 @@ const nextConfig = {
     // Enable image optimization
     unoptimized: false,
     loader: 'default',
-  },
-  // Configure both webpack and turbopack
-  webpack: (config, { dev, isServer, webpack }) => {
-    // Only apply webpack config when not using turbopack
-    if (process.env.TURBOPACK) {
-      return config;
-    }
-
-    // Handle face-api.js and tesseract.js - exclude from server builds
-    if (isServer) {
-      config.externals = [...(config.externals || []), '@vladmandic/face-api', 'tesseract.js'];
-    }
-
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        path: false,
-        os: false,
-      };
-    }
-
-    // Performance optimizations
-    if (dev) {
-      config.optimization = {
-        ...config.optimization,
-        splitChunks: {
-          chunks: 'all',
-          cacheGroups: {
-            vendor: {
-              test: /[\\/]node_modules[\\/]/,
-              name: 'vendors',
-              chunks: 'all',
-            },
-          },
-        },
-      };
-    }
-
-    return config;
   },
   env: {
     NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'http://localhost:3000',

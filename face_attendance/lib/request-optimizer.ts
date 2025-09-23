@@ -278,7 +278,11 @@ export class OptimizedRequest {
     const { onProgress, chunkSize = 1000, ...requestOptions } = options
 
     try {
-      const response = await fetch(url, requestOptions)
+      const { cache: cacheEnabled, ...fetchOptions } = requestOptions
+      const response = await fetch(url, {
+        ...fetchOptions,
+        ...(cacheEnabled === false ? { cache: 'no-cache' } : {})
+      })
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
 
       const reader = response.body?.getReader()

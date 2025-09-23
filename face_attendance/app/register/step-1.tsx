@@ -241,3 +241,5 @@ export function RegistrationStep1({ onNext, initialData }: RegistrationStep1Prop
     </div>
   )
 }
+
+export default RegistrationStep1

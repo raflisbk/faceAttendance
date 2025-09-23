@@ -69,9 +69,9 @@ export class PerformanceMonitor {
             redirectCount: nav.redirectCount
           })
 
-          this.recordMetric('domComplete', nav.domComplete - nav.navigationStart, 'load')
-          this.recordMetric('loadComplete', nav.loadEventEnd - nav.navigationStart, 'load')
-          this.recordMetric('timeToInteractive', nav.domInteractive - nav.navigationStart, 'load')
+          this.recordMetric('domComplete', nav.domComplete - nav.fetchStart, 'load')
+          this.recordMetric('loadComplete', nav.loadEventEnd - nav.fetchStart, 'load')
+          this.recordMetric('timeToInteractive', nav.domInteractive - nav.fetchStart, 'load')
         })
       })
 
@@ -254,7 +254,7 @@ export class PerformanceMonitor {
     const originalFetch = window.fetch
     window.fetch = async (...args) => {
       const startTime = performance.now()
-      const url = typeof args[0] === 'string' ? args[0] : args[0].url
+      const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url
 
       try {
         const response = await originalFetch(...args)
@@ -404,18 +404,20 @@ export class PerformanceMonitor {
       if (!summary[metric.name]) {
         summary[metric.name] = { values: [], count: 0 }
       }
-      summary[metric.name].values.push(metric.value)
-      summary[metric.name].count++
+      summary[metric.name]!.values.push(metric.value)
+      summary[metric.name]!.count++
     })
 
     // Calculate statistics
     const metrics: Record<string, { avg: number; min: number; max: number; count: number }> = {}
     Object.entries(summary).forEach(([name, data]) => {
-      metrics[name] = {
-        avg: data.values.reduce((a, b) => a + b, 0) / data.values.length,
-        min: Math.min(...data.values),
-        max: Math.max(...data.values),
-        count: data.count
+      if (data.values.length > 0) {
+        metrics[name] = {
+          avg: data.values.reduce((a, b) => a + b, 0) / data.values.length,
+          min: Math.min(...data.values),
+          max: Math.max(...data.values),
+          count: data.count
+        }
       }
     })
 
@@ -427,7 +429,7 @@ export class PerformanceMonitor {
         domContentLoaded: 2000,
         slowResource: 2000
       }
-      return thresholds[metric.name] && metric.value > thresholds[metric.name]
+      return thresholds[metric.name] && metric.value > thresholds[metric.name]!
     })
 
     return {
